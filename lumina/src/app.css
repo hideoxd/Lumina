@@ -1,0 +1,553 @@
+/* ============================================================
+   LUMINA — Global Design System
+   Liquid Glass UI / NeuGlass Design Language
+   ============================================================ */
+
+/* ---- CSS Custom Properties (Theme Engine) ---- */
+:root {
+  /* ---- Color System ---- */
+  /* Base backgrounds */
+  --bg-primary: hsl(225, 15%, 6%);
+  --bg-secondary: hsl(225, 15%, 10%);
+  --bg-tertiary: hsl(225, 12%, 14%);
+  --bg-elevated: hsl(225, 12%, 18%);
+
+  /* Glass properties */
+  --glass-bg: hsla(225, 20%, 15%, 0.45);
+  --glass-bg-hover: hsla(225, 20%, 18%, 0.55);
+  --glass-bg-active: hsla(225, 20%, 12%, 0.6);
+  --glass-border: hsla(0, 0%, 100%, 0.08);
+  --glass-border-hover: hsla(0, 0%, 100%, 0.14);
+  --glass-blur: 24px;
+  --glass-noise-opacity: 0.03;
+  --glass-saturation: 1.6;
+
+  /* Accent — Electric Violet (user-customizable) */
+  --accent-h: 270;
+  --accent-s: 95%;
+  --accent-l: 65%;
+  --accent-primary: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --accent-secondary: hsl(calc(var(--accent-h) + 50), 90%, 60%);
+  --accent-glow: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
+  --accent-glow-strong: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
+  --accent-gradient: linear-gradient(
+    135deg,
+    hsl(var(--accent-h), var(--accent-s), var(--accent-l)),
+    hsl(calc(var(--accent-h) + 50), 90%, 60%)
+  );
+  --accent-gradient-subtle: linear-gradient(
+    135deg,
+    hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15),
+    hsla(calc(var(--accent-h) + 50), 90%, 60%, 0.08)
+  );
+
+  /* Text */
+  --text-primary: hsl(0, 0%, 95%);
+  --text-secondary: hsl(0, 0%, 65%);
+  --text-tertiary: hsl(0, 0%, 42%);
+  --text-disabled: hsl(0, 0%, 30%);
+  --text-accent: var(--accent-primary);
+
+  /* Semantic */
+  --success: hsl(152, 60%, 52%);
+  --warning: hsl(38, 92%, 60%);
+  --error: hsl(0, 72%, 58%);
+  --info: hsl(210, 80%, 60%);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 3px hsla(0, 0%, 0%, 0.2);
+  --shadow-sm: 0 2px 8px hsla(0, 0%, 0%, 0.3);
+  --shadow-md: 0 8px 32px hsla(0, 0%, 0%, 0.35);
+  --shadow-lg: 0 16px 64px hsla(0, 0%, 0%, 0.45);
+  --shadow-xl: 0 24px 80px hsla(0, 0%, 0%, 0.55);
+  --shadow-glow: 0 0 24px var(--accent-glow);
+  --shadow-glow-lg: 0 0 48px var(--accent-glow), 0 0 96px var(--accent-glow);
+  --shadow-inset: inset 0 1px 1px hsla(0, 0%, 100%, 0.05);
+
+  /* Animations */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+  --animation-speed-multiplier: 1;
+
+  /* Border Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.75rem;      /* 12px */
+  --text-base: 0.8125rem;  /* 13px */
+  --text-md: 0.875rem;     /* 14px */
+  --text-lg: 1rem;         /* 16px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 2rem;        /* 32px */
+  --text-4xl: 2.5rem;      /* 40px */
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  --titlebar-height: 40px;
+  --player-bar-height: 88px;
+  --scrollbar-width: 6px;
+
+  /* Z-Index layers */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+  --z-titlebar: 700;
+}
+
+/* ---- Light Mode ---- */
+:root[data-theme="light"] {
+  --bg-primary: hsl(225, 15%, 96%);
+  --bg-secondary: hsl(225, 15%, 92%);
+  --bg-tertiary: hsl(225, 12%, 88%);
+  --bg-elevated: hsl(225, 10%, 100%);
+
+  --glass-bg: hsla(225, 20%, 100%, 0.65);
+  --glass-bg-hover: hsla(225, 20%, 100%, 0.75);
+  --glass-bg-active: hsla(225, 20%, 95%, 0.7);
+  --glass-border: hsla(0, 0%, 0%, 0.08);
+  --glass-border-hover: hsla(0, 0%, 0%, 0.14);
+
+  --text-primary: hsl(225, 15%, 10%);
+  --text-secondary: hsl(225, 10%, 40%);
+  --text-tertiary: hsl(225, 8%, 58%);
+  --text-disabled: hsl(225, 5%, 72%);
+
+  --shadow-xs: 0 1px 3px hsla(225, 20%, 0%, 0.06);
+  --shadow-sm: 0 2px 8px hsla(225, 20%, 0%, 0.08);
+  --shadow-md: 0 8px 32px hsla(225, 20%, 0%, 0.1);
+  --shadow-lg: 0 16px 64px hsla(225, 20%, 0%, 0.12);
+  --shadow-inset: inset 0 1px 1px hsla(0, 0%, 100%, 0.6);
+}
+
+/* ---- Global Reset ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  scroll-behavior: smooth;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* Prevent text selection on UI elements, allow on text content */
+h1, h2, h3, h4, h5, h6, p, span, label {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Enable selection for input-like elements */
+input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+/* ---- Scrollbar Styling ---- */
+::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsla(0, 0%, 100%, 0.12);
+  border-radius: var(--radius-full);
+  transition: background var(--duration-fast) ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsla(0, 0%, 100%, 0.22);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ---- Focus Styles ---- */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Link Reset ---- */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---- Button Reset ---- */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+/* ---- List Reset ---- */
+ul, ol {
+  list-style: none;
+}
+
+/* ---- Image Reset ---- */
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ============================================================
+   NOISE TEXTURE (SVG inline for zero HTTP requests)
+   ============================================================ */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--glass-noise-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ============================================================
+   GLASS COMPONENT MIXINS (as classes)
+   ============================================================ */
+
+/* Base glass surface */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md), var(--shadow-inset);
+  position: relative;
+}
+
+/* Glass with inner light edge */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    hsla(0, 0%, 100%, 0.05) 0%,
+    transparent 40%
+  );
+  pointer-events: none;
+}
+
+/* Glass hover state */
+.glass-interactive {
+  transition:
+    background var(--duration-fast) var(--ease-out-quart),
+    border-color var(--duration-fast) var(--ease-out-quart),
+    box-shadow var(--duration-normal) var(--ease-out-quart),
+    transform var(--duration-fast) var(--ease-out-quart);
+}
+
+.glass-interactive:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-lg), var(--shadow-inset);
+}
+
+.glass-interactive:active {
+  background: var(--glass-bg-active);
+  transform: scale(0.98);
+}
+
+/* Accent-bordered glass */
+.glass-accent {
+  border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+}
+
+.glass-accent:hover {
+  border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.4);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+/* ============================================================
+   PERFORMANCE MODE — Disable expensive blur
+   ============================================================ */
+:root[data-glass="off"] .glass,
+:root[data-glass="off"] .glass-card,
+:root[data-glass="off"] .glass-btn,
+:root[data-glass="off"] .sidebar,
+:root[data-glass="off"] .titlebar,
+:root[data-glass="off"] .player-bar,
+:root[data-glass="off"] .backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+/* Text utilities */
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-md { font-size: var(--text-md); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-accent { color: var(--accent-primary); }
+
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Accent glow text */
+.text-glow {
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* ============================================================
+   KEYFRAME ANIMATIONS
+   ============================================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  50% {
+    box-shadow: 0 0 32px var(--accent-glow-strong);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ---- Animation utility classes ---- */
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) var(--ease-out-quart) both;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--duration-slow) var(--ease-out-expo) both;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale var(--duration-slow) var(--ease-out-expo) both;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--duration-slow) var(--ease-out-expo) both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--duration-slow) var(--ease-out-expo) both;
+}
+
+/* Stagger delay utilities */
+.delay-1 { animation-delay: 50ms; }
+.delay-2 { animation-delay: 100ms; }
+.delay-3 { animation-delay: 150ms; }
+.delay-4 { animation-delay: 200ms; }
+.delay-5 { animation-delay: 250ms; }
+.delay-6 { animation-delay: 300ms; }
+.delay-7 { animation-delay: 350ms; }
+.delay-8 { animation-delay: 400ms; }
+
+/* ============================================================
+   APP LAYOUT
+   ============================================================ */
+
+.app-container {
+  display: grid;
+  grid-template-rows: var(--titlebar-height) 1fr var(--player-bar-height);
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-areas:
+    "titlebar titlebar"
+    "sidebar  content"
+    "player   player";
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--bg-primary);
+  position: relative;
+}
+
+.app-titlebar {
+  grid-area: titlebar;
+  z-index: var(--z-titlebar);
+}
+
+.app-sidebar {
+  grid-area: sidebar;
+  z-index: var(--z-sticky);
+}
+
+.app-content {
+  grid-area: content;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.app-player {
+  grid-area: player;
+  z-index: var(--z-sticky);
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

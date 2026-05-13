@@ -1,0 +1,301 @@
+<script lang="ts">
+  import Icon from '$lib/components/Icon.svelte';
+  import type { Track } from '$lib/types';
+  import { getArtworkUrl } from '$lib/utils/artwork';
+  import { setTrackFavorite } from '$lib/commands/library';
+  import { patchTrack } from '$lib/stores/library';
+
+  export interface Props {
+    tracks: Track[];
+    onPlay?: (track: Track, index: number) => void;
+  }
+
+  let { tracks, onPlay }: Props = $props();
+
+  const rowHeight = 52;
+  let viewportEl: HTMLDivElement;
+  let viewportHeight = $state(600);
+  let scrollTop = $state(0);
+
+  let startIndex = $derived(Math.max(0, Math.floor(scrollTop / rowHeight) - 8));
+  let endIndex = $derived(
+    Math.min(tracks.length, Math.ceil((scrollTop + viewportHeight) / rowHeight) + 8)
+  );
+
+  let offsetTop = $derived(startIndex * rowHeight);
+  let totalHeight = $derived(tracks.length * rowHeight);
+
+  const artworkCache = new Map<string, string>();
+
+  async function ensureArtworkUrl(filename: string): Promise<string> {
+    const cached = artworkCache.get(filename);
+    if (cached) return cached;
+    const url = await getArtworkUrl(filename);
+    artworkCache.set(filename, url);
+    return url;
+  }
+
+  function handleScroll() {
+    if (!viewportEl) return;
+    scrollTop = viewportEl.scrollTop;
+  }
+
+  function handleResize() {
+    if (!viewportEl) return;
+    viewportHeight = viewportEl.clientHeight;
+  }
+
+  async function toggleFavorite(track: Track) {
+    const next = !track.favorite;
+    patchTrack(track.id, { favorite: next });
+    try {
+      await setTrackFavorite(track.id, next);
+    } catch {
+      patchTrack(track.id, { favorite: !next });
+    }
+  }
+</script>
+
+<svelte:window onresize={handleResize} />
+
+<div class="tracklist">
+  <div class="header">
+    <div class="col col-title">Title</div>
+    <div class="col col-artist">Artist</div>
+    <div class="col col-album">Album</div>
+    <div class="col col-fav">Fav</div>
+    <div class="col col-time">Time</div>
+  </div>
+
+  <div
+    class="viewport"
+    bind:this={viewportEl}
+    onscroll={handleScroll}
+    onmouseenter={handleResize}
+  >
+    <div class="spacer" style="height: {totalHeight}px">
+      <div class="slice" style="transform: translateY({offsetTop}px)">
+        {#each tracks.slice(startIndex, endIndex) as track, localIndex (track.id)}
+          {@const index = startIndex + localIndex}
+          <div
+            class="row"
+            style="height: {rowHeight}px"
+            title="Double click to play"
+            ondblclick={() => onPlay?.(track, index)}
+          >
+            <div class="cell cell-title">
+              <div class="art">
+                {#if track.artwork_path}
+                  {#await ensureArtworkUrl(track.artwork_path)}
+                    <div class="art-placeholder">
+                      <Icon name="music" size={16} color="var(--text-tertiary)" />
+                    </div>
+                  {:then url}
+                    <img src={url} alt="" loading="lazy" />
+                  {:catch}
+                    <div class="art-placeholder">
+                      <Icon name="music" size={16} color="var(--text-tertiary)" />
+                    </div>
+                  {/await}
+                {:else}
+                  <div class="art-placeholder">
+                    <Icon name="music" size={16} color="var(--text-tertiary)" />
+                  </div>
+                {/if}
+              </div>
+              <div class="meta">
+                <div class="title truncate">{track.title}</div>
+                <div class="sub truncate">{track.file_format.toUpperCase()}</div>
+              </div>
+            </div>
+
+            <div class="cell cell-artist truncate">{track.artist}</div>
+            <div class="cell cell-album truncate">{track.album}</div>
+            <div class="cell cell-fav">
+              <button
+                class="fav"
+                class:active={track.favorite}
+                title={track.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  void toggleFavorite(track);
+                }}
+              >
+                <Icon
+                  name={track.favorite ? 'heart-filled' : 'heart'}
+                  size={14}
+                  color={track.favorite ? 'var(--accent-primary)' : 'var(--text-tertiary)'}
+                />
+              </button>
+            </div>
+            <div class="cell cell-time">{Math.floor(track.duration / 60)}:{String(Math.floor(track.duration % 60)).padStart(2, '0')}</div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tracklist {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 420px;
+  }
+
+  .header {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 44px 80px;
+    gap: var(--space-3);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--text-tertiary);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .viewport {
+    flex: 1;
+    overflow: auto;
+    border-radius: var(--radius-xl);
+  }
+
+  .spacer {
+    position: relative;
+  }
+
+  .slice {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+  }
+
+  .row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 44px 80px;
+    gap: var(--space-3);
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-left: none;
+    border-right: none;
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: default;
+    transition:
+      background var(--duration-fast) var(--ease-out-quart),
+      border-color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .row:hover {
+    background: hsla(0, 0%, 100%, 0.04);
+    border-color: hsla(0, 0%, 100%, 0.06);
+  }
+
+  .cell {
+    min-width: 0;
+  }
+
+  .cell-fav {
+    display: flex;
+    justify-content: center;
+  }
+
+  .fav {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    transition:
+      background var(--duration-fast) var(--ease-out-quart),
+      border-color var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-fast) var(--ease-out-back);
+  }
+
+  .fav:hover {
+    background: hsla(0, 0%, 100%, 0.05);
+    border-color: hsla(0, 0%, 100%, 0.07);
+    transform: scale(1.06);
+  }
+
+  .fav:active {
+    transform: scale(0.95);
+  }
+
+  .fav.active {
+    background: var(--accent-gradient-subtle);
+    border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+  }
+
+  .cell-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .art {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--bg-tertiary);
+  }
+
+  .art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .art-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cell-time {
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 600;
+  }
+</style>

@@ -1,0 +1,298 @@
+<!--
+  Titlebar — Custom window titlebar with drag region, search, and window controls
+  Replaces native OS titlebar for premium feel
+-->
+<script lang="ts">
+  import { getCurrentWindow } from '@tauri-apps/api/window';
+  import Icon from '$lib/components/Icon.svelte';
+  import { searchQuery, searchFocused, settingsOpen } from '$lib/stores/ui';
+  import { activeTheme, toggleMode } from '$lib/stores/theme';
+  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+
+  let isMaximized = $state(false);
+  let searchInputEl: HTMLInputElement;
+
+  const appWindow = getCurrentWindow();
+
+  async function checkMaximized() {
+    isMaximized = await appWindow.isMaximized();
+  }
+
+  async function handleMinimize() {
+    await appWindow.minimize();
+  }
+
+  async function handleMaximize() {
+    await appWindow.toggleMaximize();
+    isMaximized = !isMaximized;
+  }
+
+  async function handleClose() {
+    await appWindow.close();
+  }
+
+  function handleSearchFocus() {
+    searchFocused.set(true);
+  }
+
+  function handleSearchBlur() {
+    searchFocused.set(false);
+  }
+
+  function handleSearchKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      searchQuery.set('');
+      searchInputEl?.blur();
+    }
+  }
+
+  // Keyboard shortcut: Ctrl+F to focus search
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      searchInputEl?.focus();
+    }
+  }
+</script>
+
+<svelte:window onkeydown={handleGlobalKeydown} />
+
+<header class="titlebar" data-tauri-drag-region>
+  <!-- Left: App logo & name -->
+  <div class="titlebar-left">
+    <div class="app-logo">
+      <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+        <defs>
+          <linearGradient id="tbLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="hsl(var(--accent-h), var(--accent-s), var(--accent-l))" />
+            <stop offset="100%" stop-color="hsl(calc(var(--accent-h) + 50), 90%, 60%)" />
+          </linearGradient>
+        </defs>
+        <circle cx="32" cy="32" r="12" fill="url(#tbLogoGrad)" opacity="0.85" />
+        <path d="M28 24L40 32L28 40Z" fill="white" opacity="0.95" />
+      </svg>
+    </div>
+    <span class="app-name">Lumina</span>
+  </div>
+
+  <!-- Center: Search bar -->
+  <div class="titlebar-center" data-tauri-drag-region>
+    <div class="search-container" class:focused={$searchFocused}>
+      <Icon name="search" size={14} color="var(--text-tertiary)" />
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search your library..."
+        bind:value={$searchQuery}
+        bind:this={searchInputEl}
+        onfocus={handleSearchFocus}
+        onblur={handleSearchBlur}
+        onkeydown={handleSearchKeydown}
+      />
+      {#if $searchQuery}
+        <button class="search-clear" onclick={() => searchQuery.set('')}>
+          <Icon name="x" size={12} />
+        </button>
+      {/if}
+      <kbd class="search-shortcut">⌘F</kbd>
+    </div>
+  </div>
+
+  <!-- Right: Controls -->
+  <div class="titlebar-right">
+    <!-- Theme toggle -->
+    <GlassButton variant="icon" size="sm" title="Toggle theme" onclick={() => toggleMode()}>
+      <Icon name={$activeTheme.mode === 'dark' ? 'sun' : 'moon'} size={15} />
+    </GlassButton>
+
+    <!-- Settings -->
+    <GlassButton variant="icon" size="sm" title="Settings" onclick={() => settingsOpen.update(v => !v)}>
+      <Icon name="settings" size={15} />
+    </GlassButton>
+
+    <!-- Window controls (separated) -->
+    <div class="window-controls">
+      <button class="win-btn win-minimize" onclick={handleMinimize} title="Minimize">
+        <Icon name="minus" size={14} />
+      </button>
+      <button class="win-btn win-maximize" onclick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
+        <Icon name="maximize" size={12} />
+      </button>
+      <button class="win-btn win-close" onclick={handleClose} title="Close">
+        <Icon name="x" size={14} />
+      </button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--titlebar-height);
+    padding: 0 var(--space-3);
+    background: hsla(225, 15%, 8%, 0.8);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--glass-border);
+    -webkit-app-region: drag;
+    position: relative;
+    z-index: var(--z-titlebar);
+  }
+
+  :global([data-theme="light"]) .titlebar {
+    background: hsla(225, 15%, 98%, 0.85);
+  }
+
+  .titlebar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 160px;
+    -webkit-app-region: no-drag;
+  }
+
+  .app-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    transition: transform var(--duration-fast) var(--ease-out-back);
+  }
+
+  .app-logo:hover {
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .app-name {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Search */
+  .titlebar-center {
+    flex: 1;
+    max-width: 420px;
+    display: flex;
+    justify-content: center;
+    -webkit-app-region: no-drag;
+  }
+
+  .search-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    height: 28px;
+    padding: 0 var(--space-3);
+    background: hsla(0, 0%, 100%, 0.04);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-normal) ease;
+  }
+
+  .search-container.focused {
+    background: hsla(0, 0%, 100%, 0.08);
+    border-color: var(--glass-border-hover);
+    box-shadow: 0 0 0 3px hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.1);
+  }
+
+  .search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    -webkit-app-region: no-drag;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .search-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: hsla(0, 0%, 100%, 0.1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast) ease;
+  }
+
+  .search-clear:hover {
+    background: hsla(0, 0%, 100%, 0.2);
+  }
+
+  .search-shortcut {
+    font-size: 9px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    color: var(--text-tertiary);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--glass-border);
+    background: hsla(0, 0%, 100%, 0.03);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* Right section */
+  .titlebar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 160px;
+    justify-content: flex-end;
+    -webkit-app-region: no-drag;
+  }
+
+  /* Window controls */
+  .window-controls {
+    display: flex;
+    align-items: center;
+    margin-left: var(--space-2);
+  }
+
+  .win-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: var(--titlebar-height);
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease;
+  }
+
+  .win-btn:hover {
+    background: hsla(0, 0%, 100%, 0.06);
+    color: var(--text-primary);
+  }
+
+  .win-close:hover {
+    background: hsla(0, 80%, 50%, 0.8);
+    color: white;
+  }
+</style>
