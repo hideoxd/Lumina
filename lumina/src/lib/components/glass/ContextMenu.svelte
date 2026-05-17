@@ -136,6 +136,19 @@
     z-index: var(--z-tooltip);
   }
 
+  .context-menu::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsla(0, 0%, 100%, 0.06) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+
   :global([data-theme="light"]) .context-menu {
     background: hsla(225, 18%, 96%, 0.92);
     border-color: hsla(0, 0%, 0%, 0.08);
@@ -158,12 +171,20 @@
     cursor: pointer;
     transition:
       background var(--duration-fast) var(--ease-out-quart),
-      color var(--duration-fast) var(--ease-out-quart);
+      color var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-fast) var(--ease-out-back);
+    position: relative;
+    z-index: 1;
   }
 
   .menu-item:hover:not(.disabled) {
     background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.12);
     color: var(--accent-primary);
+    transform: translateX(4px);
+  }
+
+  .menu-item:active:not(.disabled) {
+    transform: scale(0.98);
   }
 
   .menu-item.danger {

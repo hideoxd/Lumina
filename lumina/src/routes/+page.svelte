@@ -480,6 +480,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: var(--space-6);
+    animation: slideUp 0.5s var(--ease-out-expo) both;
   }
 
   .view-title-section {
@@ -493,12 +494,15 @@
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
+    animation: fadeIn 0.6s var(--ease-out-quart) both;
   }
 
   .view-count {
     font-size: var(--text-sm);
     color: var(--text-tertiary);
     font-weight: 500;
+    animation: fadeIn 0.6s var(--ease-out-quart) both;
+    animation-delay: 0.1s;
   }
 
   .view-actions {
@@ -566,6 +570,8 @@
     background: var(--accent-gradient);
     box-shadow: 0 0 16px var(--accent-glow);
     transition: width var(--duration-fast) linear;
+    animation: shimmer 2s ease-in-out infinite;
+    background-size: 200% 100%;
   }
 
   /* Track list wrapper */
@@ -582,6 +588,7 @@
   .empty-state {
     max-width: 560px;
     margin: var(--space-16) auto 0;
+    animation: bounceIn 0.8s var(--ease-out-back) both;
   }
 
   .empty-content {
@@ -600,6 +607,7 @@
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-8);
+    animation: breathe 3s ease-in-out infinite;
   }
 
   .empty-icon {
@@ -613,6 +621,8 @@
     justify-content: center;
     background: var(--accent-gradient-subtle);
     border: 1px solid hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15);
+    animation: bounceIn 0.6s var(--ease-out-back) both;
+    animation-delay: 0.2s;
   }
 
   .empty-icon-ring {
@@ -693,6 +703,15 @@
     background: hsla(0, 0%, 100%, 0.04);
     border: 1px solid var(--glass-border);
     letter-spacing: 0.05em;
+    transition: all var(--duration-fast) var(--ease-out-quart);
+    animation: fadeInScale 0.4s var(--ease-out-back) both;
+  }
+
+  .format-tag:hover {
+    background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.1);
+    border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
+    color: var(--accent-primary);
+    transform: translateY(-2px);
   }
 
   /* Placeholder views */
@@ -711,13 +730,20 @@
     background: var(--glass-bg);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out-quart);
+    transition: background var(--duration-fast) var(--ease-out-quart),
+                color var(--duration-fast) var(--ease-out-quart),
+                transform var(--duration-fast) var(--ease-out-back);
     flex-shrink: 0;
   }
 
   .back-btn:hover {
     background: var(--glass-bg-hover);
     color: var(--text-primary);
+    transform: translateX(-2px);
+  }
+
+  .back-btn:active {
+    transform: scale(0.95);
   }
 
   /* ---- Mini Player ---- */
@@ -729,16 +755,18 @@
     padding: var(--space-2) var(--space-3);
     background: var(--bg-primary);
     border-bottom: 1px solid var(--glass-border);
+    animation: fadeIn 0.4s var(--ease-out-quart) both;
   }
 
   .mini-art {
     width: 48px;
     height: 48px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     flex-shrink: 0;
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-sm);
+    animation: bounceIn 0.5s var(--ease-out-back) both;
   }
 
   .mini-art img {
@@ -759,6 +787,7 @@
   .mini-info {
     flex: 1;
     min-width: 0;
+    animation: slideInLeft 0.5s var(--ease-out-expo) both;
   }
 
   .mini-title {
@@ -777,6 +806,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
+    animation: fadeIn 0.5s var(--ease-out-quart) both;
+    animation-delay: 0.1s;
   }
 
   .mini-btn {
@@ -790,12 +821,19 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out-quart), color var(--duration-fast) var(--ease-out-quart);
+    transition: background var(--duration-fast) var(--ease-out-quart),
+                color var(--duration-fast) var(--ease-out-quart),
+                transform var(--duration-fast) var(--ease-out-back);
   }
 
   .mini-btn:hover {
     background: hsla(0, 0%, 100%, 0.06);
     color: var(--text-primary);
+    transform: scale(1.1);
+  }
+
+  .mini-btn:active {
+    transform: scale(0.9);
   }
 
   .mini-play {
@@ -806,6 +844,7 @@
 
   .mini-play:hover {
     box-shadow: var(--shadow-glow-lg);
+    transform: scale(1.15);
   }
 
   .mini-exit {
@@ -819,11 +858,18 @@
     background: transparent;
     border: 1px solid var(--glass-border);
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out-quart), color var(--duration-fast) var(--ease-out-quart);
+    transition: background var(--duration-fast) var(--ease-out-quart),
+                color var(--duration-fast) var(--ease-out-quart),
+                transform var(--duration-fast) var(--ease-out-back);
   }
 
   .mini-exit:hover {
     background: var(--glass-bg-hover);
     color: var(--text-primary);
+    transform: scale(1.1);
+  }
+
+  .mini-exit:active {
+    transform: scale(0.9);
   }
 </style>

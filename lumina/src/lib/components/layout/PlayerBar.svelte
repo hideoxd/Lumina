@@ -106,9 +106,6 @@
 </script>
 
 <footer class="player-bar">
-  <!-- Album art glow (behind the bar) -->
-  <div class="player-glow" aria-hidden="true"></div>
-
   <div class="player-content">
     <!-- Left: Track info -->
     <div class="player-left">
@@ -123,7 +120,7 @@
           {/if}
         </div>
         <div class="art-overlay">
-          <Icon name="chevron-down" size={16} />
+          <Icon name="maximize" size={14} />
         </div>
       </button>
 
@@ -240,10 +237,6 @@
         />
       </GlassButton>
 
-      <GlassButton variant="icon" size="sm" title="Visualizer">
-        <Icon name="waveform" size={15} />
-      </GlassButton>
-
       <div class="volume-control">
         <GlassButton variant="icon" size="xs" title={isMuted ? 'Unmute' : 'Mute'} onclick={toggleMute}>
           <Icon name={getVolumeIcon()} size={15} />
@@ -266,9 +259,9 @@
 <style>
   .player-bar {
     height: var(--player-bar-height);
-    background: hsla(225, 15%, 7%, 0.85);
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    background: hsla(225, 15%, 8%, 0.95);
+    backdrop-filter: blur(32px) saturate(1.8);
+    -webkit-backdrop-filter: blur(32px) saturate(1.8);
     border-top: 1px solid var(--glass-border);
     position: relative;
     z-index: var(--z-sticky);
@@ -276,23 +269,7 @@
   }
 
   :global([data-theme="light"]) .player-bar {
-    background: hsla(225, 15%, 97%, 0.9);
-  }
-
-  /* Ambient glow behind player */
-  .player-glow {
-    position: absolute;
-    top: -60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    height: 60px;
-    background: radial-gradient(
-      ellipse at center,
-      hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.08) 0%,
-      transparent 70%
-    );
-    pointer-events: none;
+    background: hsla(225, 15%, 98%, 0.95);
   }
 
   .player-content {
@@ -300,7 +277,7 @@
     align-items: center;
     justify-content: space-between;
     height: 100%;
-    padding: 0 var(--space-4);
+    padding: 0 var(--space-5);
     position: relative;
     z-index: 1;
   }
@@ -310,8 +287,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    min-width: 220px;
-    max-width: 300px;
+    min-width: 240px;
+    max-width: 320px;
     flex: 1;
   }
 
@@ -319,20 +296,25 @@
     position: relative;
     width: 56px;
     height: 56px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     cursor: pointer;
     flex-shrink: 0;
-    transition: transform var(--duration-fast) var(--ease-out-quart);
+    transition: all var(--duration-fast) var(--ease-out-back);
     box-shadow: var(--shadow-md);
   }
 
   .album-art-container:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
   }
 
   .album-art-container:hover .art-overlay {
     opacity: 1;
+  }
+
+  .album-art-container:active {
+    transform: scale(0.95);
   }
 
   .album-art {
@@ -362,17 +344,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: hsla(0, 0%, 0%, 0.5);
+    background: hsla(0, 0%, 0%, 0.6);
     opacity: 0;
     transition: opacity var(--duration-fast) ease;
-    transform: rotate(180deg);
   }
 
   .track-info {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    gap: 2px;
+    gap: 3px;
   }
 
   .track-title {
@@ -382,11 +363,11 @@
     cursor: pointer;
     text-align: left;
     max-width: 180px;
+    transition: color var(--duration-fast) ease;
   }
 
   .track-title:hover {
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    color: var(--accent-primary);
   }
 
   .track-artist {
@@ -401,20 +382,20 @@
     flex-direction: column;
     align-items: center;
     gap: var(--space-2);
-    max-width: 600px;
+    max-width: 650px;
     flex: 2;
   }
 
   .playback-controls {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   /* Play button — special treatment */
   .play-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: var(--accent-gradient);
     border: none;
@@ -424,19 +405,19 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 0 16px var(--accent-glow);
+    box-shadow: 0 0 20px var(--accent-glow);
     transition:
       transform var(--duration-fast) var(--ease-out-back),
       box-shadow var(--duration-normal) ease;
   }
 
   .play-btn:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 24px var(--accent-glow-strong);
+    transform: scale(1.12);
+    box-shadow: 0 0 32px var(--accent-glow-strong);
   }
 
   .play-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 
   .play-btn.playing {
@@ -455,7 +436,7 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(135deg, hsla(0,0%,100%,0.2) 0%, transparent 50%);
+    background: linear-gradient(135deg, hsla(0,0%,100%,0.25) 0%, transparent 50%);
     pointer-events: none;
   }
 
@@ -463,15 +444,15 @@
   .progress-row {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
     width: 100%;
   }
 
   .time-label {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-tertiary);
-    min-width: 35px;
+    min-width: 40px;
     text-align: center;
     font-variant-numeric: tabular-nums;
   }
@@ -484,9 +465,9 @@
   .player-right {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    min-width: 220px;
-    max-width: 300px;
+    gap: var(--space-3);
+    min-width: 240px;
+    max-width: 320px;
     flex: 1;
     justify-content: flex-end;
   }
@@ -494,10 +475,10 @@
   .volume-control {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: var(--space-2);
   }
 
   .volume-slider {
-    width: 90px;
+    width: 100px;
   }
 </style>

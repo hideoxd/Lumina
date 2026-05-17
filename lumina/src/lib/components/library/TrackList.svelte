@@ -233,7 +233,7 @@
   .viewport {
     flex: 1;
     overflow: auto;
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-2xl);
   }
 
   .spacer {
@@ -263,12 +263,18 @@
     cursor: default;
     transition:
       background var(--duration-fast) var(--ease-out-quart),
-      border-color var(--duration-fast) var(--ease-out-quart);
+      border-color var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-fast) var(--ease-out-back);
   }
 
   .row:hover {
     background: hsla(0, 0%, 100%, 0.04);
     border-color: hsla(0, 0%, 100%, 0.06);
+    transform: translateX(4px);
+  }
+
+  .row:active {
+    transform: scale(0.99);
   }
 
   .cell {
@@ -298,16 +304,17 @@
   .fav:hover {
     background: hsla(0, 0%, 100%, 0.05);
     border-color: hsla(0, 0%, 100%, 0.07);
-    transform: scale(1.06);
+    transform: scale(1.15);
   }
 
   .fav:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
 
   .fav.active {
     background: var(--accent-gradient-subtle);
     border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+    animation: bounceIn 0.4s var(--ease-out-back) both;
   }
 
   .cell-title {
@@ -320,12 +327,17 @@
   .art {
     width: 36px;
     height: 36px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     flex-shrink: 0;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--glass-border);
     background: var(--bg-tertiary);
+    transition: transform var(--duration-fast) var(--ease-out-back);
+  }
+
+  .row:hover .art {
+    transform: scale(1.08);
   }
 
   .art img {

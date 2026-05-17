@@ -93,6 +93,7 @@
     position: relative;
     overflow: hidden;
     text-align: left;
+    animation: fadeInScale 0.4s var(--ease-out-expo) both;
   }
 
   /* Inner light edge */
@@ -116,18 +117,19 @@
       background var(--duration-fast) var(--ease-out-quart),
       border-color var(--duration-fast) var(--ease-out-quart),
       box-shadow var(--duration-normal) var(--ease-out-quart),
-      transform var(--duration-fast) var(--ease-out-quart);
+      transform var(--duration-fast) var(--ease-out-back);
   }
 
   .glass-interactive:hover {
     background: var(--glass-bg-hover);
     border-color: var(--glass-border-hover);
     box-shadow: var(--shadow-md), var(--shadow-inset);
+    transform: translateY(-2px);
   }
 
   .glass-interactive:active {
     background: var(--glass-bg-active);
-    transform: scale(0.985);
+    transform: scale(0.98);
   }
 
   /* Accent border variant */

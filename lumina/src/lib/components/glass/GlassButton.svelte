@@ -90,7 +90,7 @@
       background var(--duration-fast) var(--ease-out-quart),
       border-color var(--duration-fast) var(--ease-out-quart),
       box-shadow var(--duration-normal) var(--ease-out-quart),
-      transform var(--duration-fast) var(--ease-out-quart),
+      transform var(--duration-fast) var(--ease-out-back),
       color var(--duration-fast) var(--ease-out-quart);
   }
 
@@ -109,10 +109,11 @@
     background: var(--glass-bg-hover);
     border-color: var(--glass-border-hover);
     box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
   }
 
   .glass-btn:active {
-    transform: scale(0.96);
+    transform: scale(0.94);
     background: var(--glass-bg-active);
   }
 
@@ -121,28 +122,28 @@
     height: 28px;
     padding: 0 var(--space-2);
     font-size: var(--text-xs);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
   }
 
   .size-sm {
     height: 32px;
     padding: 0 var(--space-3);
     font-size: var(--text-sm);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
   }
 
   .size-md {
     height: 36px;
     padding: 0 var(--space-4);
     font-size: var(--text-base);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 
   .size-lg {
     height: 44px;
     padding: 0 var(--space-6);
     font-size: var(--text-md);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 
   /* Variants */
@@ -151,11 +152,17 @@
     border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.4);
     color: white;
     box-shadow: var(--shadow-sm), 0 0 16px var(--accent-glow);
+    animation: bounceIn 0.5s var(--ease-out-back) both;
   }
 
   .variant-primary:hover {
-    box-shadow: var(--shadow-md), 0 0 24px var(--accent-glow);
+    box-shadow: var(--shadow-md), 0 0 28px var(--accent-glow);
     filter: brightness(1.1);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  .variant-primary:active {
+    transform: scale(0.95);
   }
 
   .variant-primary::after {
@@ -185,7 +192,7 @@
     -webkit-backdrop-filter: none;
     padding: 0;
     aspect-ratio: 1;
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-lg);
   }
 
   .variant-icon.size-xs { width: 28px; height: 28px; }
@@ -196,6 +203,11 @@
   .variant-icon:hover {
     background: var(--glass-bg);
     border-color: var(--glass-border);
+    transform: scale(1.1);
+  }
+
+  .variant-icon:active {
+    transform: scale(0.9);
   }
 
   .variant-icon::after {

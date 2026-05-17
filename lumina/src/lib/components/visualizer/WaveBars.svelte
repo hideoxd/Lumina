@@ -113,6 +113,17 @@
     transform-origin: bottom;
     transition: height 60ms linear;
     will-change: height;
+    animation: barPulse 2s ease-in-out infinite;
+    animation-delay: calc(var(--d) * 0.1);
+  }
+
+  @keyframes barPulse {
+    0%, 100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
 
   .playing .bar {
@@ -124,6 +135,16 @@
     border-radius: 999px;
     opacity: 0.2;
     transition: height 80ms ease, opacity 200ms ease;
+    animation: ambientPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes ambientPulse {
+    0%, 100% {
+      opacity: 0.2;
+    }
+    50% {
+      opacity: 0.35;
+    }
   }
 
   .ambient.playing .bar {

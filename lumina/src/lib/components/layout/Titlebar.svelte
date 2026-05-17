@@ -61,15 +61,28 @@
   <!-- Left: App logo & name -->
   <div class="titlebar-left">
     <div class="app-logo">
-      <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+      <svg width="24" height="24" viewBox="0 0 64 64" fill="none">
         <defs>
           <linearGradient id="tbLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="hsl(var(--accent-h), var(--accent-s), var(--accent-l))" />
             <stop offset="100%" stop-color="hsl(calc(var(--accent-h) + 50), 90%, 60%)" />
           </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
-        <circle cx="32" cy="32" r="12" fill="url(#tbLogoGrad)" opacity="0.85" />
-        <path d="M28 24L40 32L28 40Z" fill="white" opacity="0.95" />
+        <!-- Outer ring -->
+        <circle cx="32" cy="32" r="28" stroke="url(#tbLogoGrad)" stroke-width="2" fill="none" opacity="0.4" />
+        <!-- Middle ring -->
+        <circle cx="32" cy="32" r="20" stroke="url(#tbLogoGrad)" stroke-width="1.5" fill="none" opacity="0.6" />
+        <!-- Inner circle with glow -->
+        <circle cx="32" cy="32" r="14" fill="url(#tbLogoGrad)" opacity="0.85" filter="url(#glow)" />
+        <!-- Play triangle -->
+        <path d="M27 23L42 32L27 41Z" fill="white" opacity="0.95" />
       </svg>
     </div>
     <span class="app-name">Lumina</span>

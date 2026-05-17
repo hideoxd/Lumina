@@ -30,17 +30,28 @@
   <div class="splash-screen">
     <div class="splash-logo">
       <div class="splash-icon">
-        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="72" height="72" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="var(--accent-primary)" />
               <stop offset="100%" stop-color="var(--accent-secondary)" />
             </linearGradient>
+            <filter id="splashGlow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
           </defs>
-          <circle cx="32" cy="32" r="28" stroke="url(#logoGrad)" stroke-width="2.5" fill="none" opacity="0.3" />
-          <circle cx="32" cy="32" r="20" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.5" />
-          <circle cx="32" cy="32" r="12" fill="url(#logoGrad)" opacity="0.8" />
-          <path d="M28 24L40 32L28 40Z" fill="white" opacity="0.9" />
+          <!-- Outer ring -->
+          <circle cx="32" cy="32" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.3" />
+          <!-- Middle ring -->
+          <circle cx="32" cy="32" r="20" stroke="url(#logoGrad)" stroke-width="1.5" fill="none" opacity="0.5" />
+          <!-- Inner circle with glow -->
+          <circle cx="32" cy="32" r="14" fill="url(#logoGrad)" opacity="0.8" filter="url(#splashGlow)" />
+          <!-- Play triangle -->
+          <path d="M27 23L42 32L27 41Z" fill="white" opacity="0.9" />
         </svg>
       </div>
       <span class="splash-text">Lumina</span>
