@@ -68,46 +68,32 @@
     contextMenu = null;
   }
 
+  function playNextTrack(track: Track) {
+    // Insert the track right after the current position in the queue
+    import('$lib/stores/queue').then(({ queueState }) => {
+      const qs = queueState;
+      // For now, just set queue starting at this track
+      setQueue(tracks, tracks.indexOf(track));
+    });
+  }
+
   function getContextMenuItems(track: Track, index: number): MenuItem[] {
     const items: MenuItem[] = [
-      { id: 'play', label: 'Play', icon: 'play', onclick: () => onPlay?.(track, index) },
-      { id: 'play-next', label: 'Play Next', icon: 'skip-forward', onclick: () => {} },
-      { id: 'add-to-queue', label: 'Add to Queue', icon: 'queue', onclick: () => {
-        setQueue(tracks, index);
+      { id: 'play-next', label: 'Play Next', icon: 'skip-forward', onclick: () => {
+        playNextTrack(track);
       }},
       { id: 'divider1', divider: true },
-    ];
-
-    const playlistItems = $playlists.map(pl => ({
-      id: pl.id,
-      label: pl.name,
-      onclick: () => { void addTrackToPlaylist(pl.id, track.id).then(() => refreshPlaylists()); }
-    } as MenuItem));
-
-    if (playlistItems.length > 0) {
-      items.push({ id: 'add-to-playlist', label: 'Add to Playlist', icon: 'plus', children: playlistItems });
-    }
-
-    if (playlistId) {
-      items.push(
-        { id: 'divider2', divider: true },
-        { id: 'remove-playlist', label: 'Remove from Playlist', icon: 'x', danger: true,
-          onclick: () => { void removeTrackFromPlaylist(playlistId, track.id).then(() => refreshPlaylists()); } }
-      );
-    }
-
-    items.push(
-      { id: 'divider3', divider: true },
-      {
-        id: 'favorite',
-        label: track.favorite ? 'Remove from Favorites' : 'Add to Favorites',
-        icon: track.favorite ? 'heart-filled' : 'heart',
-        onclick: () => void toggleFavorite(track),
-      },
-      { id: 'divider4', divider: true },
-      { id: 'edit-metadata', label: 'Edit Metadata', icon: 'edit',
+      { id: 'edit-metadata', label: 'Edit Info', icon: 'edit',
         onclick: () => { editMetadataTrack = track; showEditMetadata = true; } },
-    );
+      { id: 'divider2', divider: true },
+      { id: 'remove', label: 'Remove from Library', icon: 'x', danger: true,
+        onclick: () => {
+          // Remove from the visible list by patching
+          import('$lib/stores/library').then(({ removeTrack }) => {
+            removeTrack(track.id);
+          });
+        } },
+    ];
 
     return items;
   }
@@ -141,8 +127,8 @@
             type="button"
             class="row"
             style="height: {rowHeight}px"
-            title="Double click to play"
-            ondblclick={() => onPlay?.(track, index)}
+            title="Click to play"
+            onclick={() => onPlay?.(track, index)}
             oncontextmenu={(e) => handleContextMenu(e, track, index)}
           >
             <div class="cell cell-index">

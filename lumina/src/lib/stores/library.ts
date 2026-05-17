@@ -14,6 +14,11 @@ export function patchTrack(trackId: string, patch: Partial<Track>) {
   tracks.update((list) => list.map((t) => (t.id === trackId ? ({ ...t, ...patch } as Track) : t)));
 }
 
+/** Remove a track from the in-memory library by id. */
+export function removeTrack(trackId: string) {
+  tracks.update((list) => list.filter((t) => t.id !== trackId));
+}
+
 /** All albums (derived from tracks) */
 export const albums = derived(tracks, ($tracks) => {
   const albumMap = new Map<string, Album>();
