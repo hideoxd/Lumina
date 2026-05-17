@@ -25,6 +25,19 @@ export function getCurrentQueueTrack(): Track | null {
   return qs.tracks[qs.currentIndex] ?? null;
 }
 
+export function addToQueueNext(track: Track) {
+  queueState.update(qs => {
+    const newTracks = [...qs.tracks];
+    // insert right after current index
+    const insertIdx = qs.currentIndex >= 0 ? qs.currentIndex + 1 : 0;
+    newTracks.splice(insertIdx, 0, track);
+    return {
+      ...qs,
+      tracks: newTracks
+    };
+  });
+}
+
 export async function playQueueIndex(index: number): Promise<void> {
   const qs = get(queueState);
   const track = qs.tracks[index];

@@ -75,7 +75,7 @@ export interface SmartPlaylistRule {
 export type RepeatMode = 'off' | 'one' | 'all';
 
 /** Library view mode */
-export type ViewMode = 'tracks' | 'albums' | 'artists' | 'playlists' | 'favorites' | 'recent';
+export type ViewMode = 'tracks' | 'albums' | 'artists' | 'playlists' | 'favorites' | 'recent' | 'youtube';
 
 /** Library sort field */
 export type SortField = 'title' | 'artist' | 'album' | 'year' | 'duration' | 'date_added' | 'play_count';

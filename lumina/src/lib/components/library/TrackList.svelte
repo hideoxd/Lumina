@@ -69,11 +69,8 @@
   }
 
   function playNextTrack(track: Track) {
-    // Insert the track right after the current position in the queue
-    import('$lib/stores/queue').then(({ queueState }) => {
-      const qs = queueState;
-      // For now, just set queue starting at this track
-      setQueue(tracks, tracks.indexOf(track));
+    import('$lib/stores/queue').then(({ addToQueueNext }) => {
+      addToQueueNext(track);
     });
   }
 
@@ -108,7 +105,7 @@
     <div class="col col-artist">Artist</div>
     <div class="col col-album">Album</div>
     <div class="col col-time">Duration</div>
-    <div class="col col-fav"></div>
+    <div class="col col-actions"></div>
   </div>
 
   <div
@@ -123,12 +120,14 @@
       <div class="slice" style="transform: translateY({offsetTop}px)">
         {#each tracks.slice(startIndex, endIndex) as track, localIndex (track.id)}
           {@const index = startIndex + localIndex}
-          <button
-            type="button"
+          <div
             class="row"
+            role="button"
+            tabindex="0"
             style="height: {rowHeight}px"
             title="Click to play"
             onclick={() => onPlay?.(track, index)}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') onPlay?.(track, index); }}
             oncontextmenu={(e) => handleContextMenu(e, track, index)}
           >
             <div class="cell cell-index">
@@ -163,7 +162,8 @@
 
             <div class="cell cell-artist truncate">{track.artist}</div>
             <div class="cell cell-album truncate">{track.album}</div>
-            <div class="cell cell-fav">
+            <div class="cell cell-time">{Math.floor(track.duration / 60)}:{String(Math.floor(track.duration % 60)).padStart(2, '0')}</div>
+            <div class="cell cell-actions">
               <span
                 class="fav"
                 class:active={track.favorite}
@@ -188,9 +188,18 @@
                   color={track.favorite ? 'var(--accent-primary)' : 'var(--text-tertiary)'}
                 />
               </span>
+              <button
+                class="options-btn"
+                title="More options"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  handleContextMenu(e, track, index);
+                }}
+              >
+                <Icon name="more-horizontal" size={16} />
+              </button>
             </div>
-            <div class="cell cell-time">{Math.floor(track.duration / 60)}:{String(Math.floor(track.duration % 60)).padStart(2, '0')}</div>
-          </button>
+          </div>
         {/each}
       </div>
     </div>
@@ -217,7 +226,7 @@
 
   .header {
     display: grid;
-    grid-template-columns: 40px 2fr 1.2fr 1.2fr 72px 40px;
+    grid-template-columns: 40px 2fr 1.2fr 1.2fr 60px 80px;
     gap: 12px;
     padding: 8px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -240,7 +249,7 @@
   .row {
     width: 100%;
     display: grid;
-    grid-template-columns: 40px 2fr 1.2fr 1.2fr 72px 40px;
+    grid-template-columns: 40px 2fr 1.2fr 1.2fr 60px 80px;
     gap: 12px;
     align-items: center;
     padding: 0 16px;
@@ -336,12 +345,24 @@
     color: var(--text-secondary);
   }
 
-  .cell-fav {
+  .cell-actions {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
   }
 
-  .fav {
+  .row:hover .cell-actions {
+    opacity: 1;
+  }
+
+  .cell-actions:focus-within {
+    opacity: 1;
+  }
+
+  .fav, .options-btn {
     width: 28px;
     height: 28px;
     border-radius: 50%;
@@ -351,13 +372,27 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    opacity: 0.3;
-    transition: opacity 0.1s;
+    color: var(--text-tertiary);
+    transition: all 0.1s;
   }
 
-  .row:hover .fav { opacity: 0.7; }
-  .fav:hover { opacity: 1 !important; }
-  .fav.active { opacity: 1; }
+  .fav:hover, .options-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+  }
+
+  .fav.active {
+    opacity: 1;
+    color: var(--accent-primary);
+  }
+  
+  /* Make active favorites always visible */
+  .row:not(:hover) .cell-actions:has(.fav.active) {
+    opacity: 1;
+  }
+  .row:not(:hover) .cell-actions:has(.fav.active) .options-btn {
+    opacity: 0;
+  }
 
   .cell-time {
     color: var(--text-tertiary);

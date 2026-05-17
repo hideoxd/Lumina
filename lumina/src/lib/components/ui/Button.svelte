@@ -79,7 +79,7 @@
     overflow: hidden;
     white-space: nowrap;
     border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
+    background: rgba(255,255,255,0.05);
 
     color: var(--text-primary);
     cursor: pointer;
@@ -105,8 +105,8 @@
   }
 
   .glass-btn:hover {
-    background: var(--glass-bg-hover);
-    border-color: var(--glass-border-hover);
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
     box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
   }
@@ -147,15 +147,14 @@
 
   /* Variants */
   .variant-primary {
-    background: var(--accent-gradient);
-    border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.4);
-    color: white;
-    box-shadow: var(--shadow-sm), 0 0 16px var(--accent-glow);
+    background: #fff;
+    border-color: #fff;
+    color: #000;
+    box-shadow: 0 2px 10px rgba(255,255,255,0.1);
   }
 
   .variant-primary:hover {
-    box-shadow: var(--shadow-md), 0 0 28px var(--accent-glow);
-    filter: brightness(1.1);
+    box-shadow: 0 4px 16px rgba(255,255,255,0.2);
     transform: translateY(-2px) scale(1.02);
   }
 

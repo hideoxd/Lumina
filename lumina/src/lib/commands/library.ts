@@ -34,7 +34,21 @@ export async function updateTrackMetadata(
     artwork_path?: string;
   },
 ): Promise<void> {
-  return invoke('edit_track_metadata', { track_id: trackId, ...fields });
+  return invoke('edit_track_metadata', {
+    track_id: trackId,
+    title: fields.title ?? null,
+    artist: fields.artist ?? null,
+    album: fields.album ?? null,
+    album_artist: fields.album_artist ?? null,
+    genre: fields.genre ?? null,
+    year: fields.year ?? null,
+    track_number: fields.track_number ?? null,
+    disc_number: fields.disc_number ?? null,
+    composer: fields.composer ?? null,
+    publisher: fields.publisher ?? null,
+    comments: fields.comments ?? null,
+    artwork_path: fields.artwork_path ?? null,
+  });
 }
 
 export async function getFavoriteTracks(): Promise<Track[]> {

@@ -4,6 +4,7 @@
   import { updateTrackMetadata } from '$lib/commands/library';
   import { patchTrack } from '$lib/stores/library';
   import type { Track } from '$lib/types';
+  import { open as openDialog } from '@tauri-apps/plugin-dialog';
 
   let {
     track,
@@ -22,6 +23,7 @@
   let composer = $state('');
   let publisher = $state('');
   let comments = $state('');
+  let artworkPath = $state('');
 
   let saving = $state(false);
 
@@ -38,6 +40,7 @@
       composer = track.composer ?? '';
       publisher = track.publisher ?? '';
       comments = track.comments ?? '';
+      artworkPath = track.artwork_path ?? '';
     }
   });
 
@@ -57,6 +60,7 @@
         composer: composer || undefined,
         publisher: publisher || undefined,
         comments: comments || undefined,
+        artwork_path: artworkPath || undefined,
       });
       patchTrack(track.id, {
         title,
@@ -70,6 +74,7 @@
         composer: composer || null,
         publisher: publisher || null,
         comments: comments || null,
+        artwork_path: artworkPath || null,
       } as Partial<Track>);
       onClose();
     } catch (e) {
@@ -78,14 +83,38 @@
       saving = false;
     }
   }
+
+  async function handleSelectImage() {
+    const file = await openDialog({
+      multiple: false,
+      filters: [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+    });
+    if (file && typeof file === 'string') {
+      artworkPath = file;
+    } else if (file && typeof file === 'object' && 'path' in file) {
+      artworkPath = (file as any).path;
+    }
+  }
 </script>
 
 <Modal title="Edit Metadata" size="sm" {open} onClose={onClose}>
   {#snippet children()}
     <div class="edit-modal">
-      <div class="field">
-        <label class="field-label" for="title">Title</label>
-        <input id="title" type="text" class="glass-input" bind:value={title} />
+      <div class="field-row">
+        <div class="field art-picker">
+          <label class="field-label">Cover Image</label>
+          <button class="art-btn" onclick={handleSelectImage} title={artworkPath || 'No image'}>
+            {#if artworkPath}
+              <span class="art-path truncate">{artworkPath.split(/[/\\]/).pop()}</span>
+            {:else}
+              Select Image
+            {/if}
+          </button>
+        </div>
+        <div class="field" style="flex: 2;">
+          <label class="field-label" for="title">Title</label>
+          <input id="title" type="text" class="glass-input" bind:value={title} />
+        </div>
       </div>
       <div class="field">
         <label class="field-label" for="artist">Artist</label>
@@ -160,11 +189,41 @@
     flex-direction: column;
     gap: var(--space-1);
     flex: 1;
+    min-width: 0;
   }
 
   .field-row {
     display: flex;
     gap: var(--space-3);
+    align-items: flex-end;
+  }
+
+  .art-picker {
+    flex: 1;
+  }
+
+  .art-btn {
+    height: 40px;
+    border-radius: var(--radius-md);
+    border: 1px dashed rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.02);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    font-size: 13px;
+    transition: all 0.15s;
+    overflow: hidden;
+  }
+  .art-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: white;
+    border-color: rgba(255,255,255,0.4);
+  }
+  .art-path {
+    max-width: 100%;
+    color: white;
   }
 
   .field-label {
@@ -177,7 +236,8 @@
 
   .glass-input {
     width: 100%;
-    padding: var(--space-3) var(--space-4);
+    height: 40px;
+    padding: 0 var(--space-3);
     border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
     background: var(--bg-tertiary);

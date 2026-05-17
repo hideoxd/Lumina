@@ -2,6 +2,7 @@ pub mod audio;
 pub mod database;
 pub mod library;
 pub mod utils;
+pub mod youtube;
 
 use tauri::Manager;
 use std::sync::Mutex;
@@ -87,6 +88,7 @@ pub fn run() {
             library::remove_track_from_playlist,
             watch_directory,
             unwatch_directory,
+            youtube::download_youtube,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -10,7 +10,7 @@
     toggleRepeat
   } from '$lib/stores/player';
   import { playNext, playPrevious, togglePlayPause, seekToSeconds } from '$lib/stores/queue';
-  import { queuePanelOpen, toggleQueue } from '$lib/stores/ui';
+  import { queuePanelOpen, toggleQueue, nowPlayingFullscreen, miniPlayerMode } from '$lib/stores/ui';
   
   let progressStr = $derived(formatTime($playerState.position));
   let durationStr = $derived(formatTime($playerState.duration));
@@ -77,7 +77,17 @@
 
     <div class="progress-container">
       <span class="time">{progressStr}</span>
-      <div class="progress-bar-wrapper" onclick={handleProgressClick} role="slider" aria-valuenow={$playerState.position} tabindex="0">
+      <div
+        class="progress-bar-wrapper"
+        role="slider"
+        aria-valuenow={$playerState.position}
+        tabindex="0"
+        onclick={handleProgressClick}
+        onkeydown={(e) => {
+          if (e.key === 'ArrowRight') seekToSeconds($playerState.position + 5);
+          if (e.key === 'ArrowLeft') seekToSeconds($playerState.position - 5);
+        }}
+      >
         <div class="progress-bg">
           <div class="progress-fill" style="width: {$playerState.duration > 0 ? ($playerState.position / $playerState.duration) * 100 : 0}%"></div>
         </div>
@@ -87,13 +97,29 @@
   </div>
 
   <div class="player-right">
-    <button class="btn-icon" class:active={$queuePanelOpen} onclick={toggleQueue}>
+    <button class="btn-icon" onclick={() => miniPlayerMode.set(true)} title="Mini Player">
+      <Icon name="minimize" size={14} />
+    </button>
+    <button class="btn-icon" onclick={() => nowPlayingFullscreen.set(true)} title="Full Screen">
+      <Icon name="maximize" size={14} />
+    </button>
+    <button class="btn-icon" class:active={$queuePanelOpen} onclick={toggleQueue} title="Queue">
       <Icon name="list" size={14} />
     </button>
     
     <div class="volume-container">
       <Icon name={$volume === 0 ? 'volume-x' : 'volume-2'} size={14} color="var(--text-secondary)" />
-      <div class="progress-bar-wrapper volume-bar" onclick={handleVolumeClick} role="slider" aria-valuenow={$volume} tabindex="0">
+      <div
+        class="progress-bar-wrapper volume-bar"
+        role="slider"
+        aria-valuenow={$volume}
+        tabindex="0"
+        onclick={handleVolumeClick}
+        onkeydown={(e) => {
+          if (e.key === 'ArrowRight') setVolume(Math.min(1, $volume + 0.1));
+          if (e.key === 'ArrowLeft') setVolume(Math.max(0, $volume - 0.1));
+        }}
+      >
         <div class="progress-bg">
           <div class="progress-fill" style="width: {$volume * 100}%"></div>
         </div>

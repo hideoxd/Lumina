@@ -70,13 +70,14 @@
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
   >
-    <div
-      class="dialog"
+<div class="dialog"
       role="dialog"
       aria-modal="true"
       aria-label={title || 'Dialog'}
       tabindex="-1"
       style="max-width: {widthMap[size]}"
+      onkeydown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
     >
       <Card padding="lg" radius="2xl" class="modal-surface" accent>
         <div class="header">
