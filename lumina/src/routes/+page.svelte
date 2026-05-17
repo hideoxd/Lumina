@@ -156,253 +156,156 @@
     </button>
   </div>
 {:else}
-<div
-  class="app-container"
-  style="grid-template-columns: {gridColumns};"
->
-  <!-- Titlebar -->
-  <div class="app-titlebar">
-    <Titlebar />
-  </div>
-
+<div class="app-container">
   <!-- Sidebar -->
   <div class="app-sidebar">
     <Sidebar />
   </div>
 
-  <!-- Main Content Area -->
-  <main class="app-content">
+  <!-- Right side: Titlebar + Content + Player -->
+  <div class="app-main">
+    <!-- Titlebar -->
+    <div class="app-titlebar">
+      <Titlebar />
+    </div>
 
-
-    <div class="content-inner">
-      {#if $currentView === 'tracks'}
-        <!-- Tracks View -->
-        <div class="view-header animate-fade-in-up">
-          <div class="view-title-section">
-            <h1 class="view-title">All Tracks</h1>
-            <span class="view-count">{$trackCount} tracks</span>
-          </div>
-          <div class="view-actions">
-            <Button variant="default" size="sm">
-              <Icon name="grid" size={14} />
-            </Button>
-            <Button variant="default" size="sm">
-              <Icon name="list-view" size={14} />
-            </Button>
-            <Button variant="primary" size="sm" onclick={handleAddMusic}>
-              <Icon name="folder-plus" size={14} />
+    <!-- Main Content Area -->
+    <main class="app-content">
+      <div class="content-inner">
+        {#if $currentView === 'tracks'}
+          <div class="view-header">
+            <div class="view-title-row">
+              <h1 class="view-title">All Tracks</h1>
+              <span class="view-count">{$trackCount}</span>
+            </div>
+            <button class="add-btn" onclick={handleAddMusic}>
+              <Icon name="plus" size={14} />
               <span>Add Music</span>
-            </Button>
+            </button>
           </div>
-        </div>
 
-        {#if $libraryLoading && $scanProgress}
-          <div class="scan-status animate-fade-in-up delay-1">
-            <Card padding="md" radius="xl">
-              <div class="scan-row">
-                <div class="scan-left">
-                  <div class="scan-dot"></div>
-                  <span class="scan-text">Scanning…</span>
-                  <span class="scan-sub">{$scanProgress.scanned} / {$scanProgress.total}</span>
-                </div>
-                <div class="scan-right">
-                  <div class="scan-bar">
-                    <div
-                      class="scan-bar-fill"
-                      style="width: {$scanProgress.total > 0 ? ($scanProgress.scanned / $scanProgress.total) * 100 : 0}%"
-                    ></div>
-                  </div>
-                </div>
+          {#if $libraryLoading && $scanProgress}
+            <div class="scan-status">
+              <span class="scan-text">Scanning… {$scanProgress.scanned}/{$scanProgress.total}</span>
+              <div class="scan-bar">
+                <div class="scan-bar-fill" style="width: {$scanProgress.total > 0 ? ($scanProgress.scanned / $scanProgress.total) * 100 : 0}%"></div>
               </div>
-            </Card>
+            </div>
+          {/if}
+
+          <div class="tracks-list-container">
+            <TrackList tracks={$visibleTracks} onPlay={handlePlayFromList} />
           </div>
-        {/if}
 
-        <!-- Empty state (shown when no tracks) -->
-        {#if $trackCount === 0}
-          <div class="empty-state animate-fade-in-up delay-2">
-            <Card padding="xl" radius="2xl">
-              <div class="empty-content">
-                <div class="empty-icon-container">
-                  <div class="empty-icon-ring ring-1"></div>
-                  <div class="empty-icon-ring ring-2"></div>
-                  <div class="empty-icon-ring ring-3"></div>
-                  <div class="empty-icon">
-                    <Icon name="music" size={48} color="var(--accent-primary)" />
-                  </div>
-                </div>
-
-                <h2 class="empty-title">Your Library is Empty</h2>
-                <p class="empty-description">
-                  Add a folder to start building your music library.<br />
-                  Lumina supports MP3, FLAC, WAV, M4A, OGG, AAC, and more.
-                </p>
-
-                <div class="empty-actions">
-                  <Button variant="primary" size="lg" onclick={handleAddMusic}>
-                    <Icon name="folder-plus" size={18} />
-                    <span>Add Music Folder</span>
-                  </Button>
-                </div>
-
-                <div class="supported-formats">
-                  <span class="format-label">Supported formats:</span>
-                  <div class="format-tags">
-                    {#each ['MP3', 'FLAC', 'WAV', 'M4A', 'OGG', 'AAC', 'AIFF', 'OPUS'] as fmt}
-                      <span class="format-tag">{fmt}</span>
-                    {/each}
-                  </div>
-                </div>
-              </div>
-            </Card>
+        {:else if $currentView === 'albums'}
+          <div class="view-header">
+            <div class="view-title-row">
+              <h1 class="view-title">Albums</h1>
+              <span class="view-count">{$albums.length}</span>
+            </div>
           </div>
-        {:else}
-          <div class="tracks-list animate-fade-in-up delay-1">
-            <Card padding="md" radius="2xl" class="tracks-card">
-              <TrackList tracks={$visibleTracks} onPlay={handlePlayFromList} />
-            </Card>
-          </div>
-        {/if}
-
-      {:else if $currentView === 'albums'}
-        <div class="view-header animate-fade-in-up">
-          <div class="view-title-section">
-            <h1 class="view-title">Albums</h1>
-            <span class="view-count">{$albums.length} albums</span>
-          </div>
-        </div>
-        <div class="animate-fade-in-up delay-1">
           <AlbumGrid
             albums={$albums}
             tracks={$allTracks}
             onPlayAlbum={(list) => void handlePlayFromCustomList(list, 0)}
           />
-        </div>
 
-      {:else if $currentView === 'artists'}
-        <div class="view-header animate-fade-in-up">
-          <div class="view-title-section">
-            <h1 class="view-title">Artists</h1>
-            <span class="view-count">{$artists.length} artists</span>
+        {:else if $currentView === 'artists'}
+          <div class="view-header">
+            <div class="view-title-row">
+              <h1 class="view-title">Artists</h1>
+              <span class="view-count">{$artists.length}</span>
+            </div>
           </div>
-        </div>
-        <div class="animate-fade-in-up delay-1">
           <ArtistGrid
             artists={$artists}
             tracks={$allTracks}
             onPlayArtist={(list) => void handlePlayFromCustomList(list, 0)}
           />
-        </div>
 
-      {:else if $currentView === 'playlists'}
-        {#if $selectedPlaylist}
-          <!-- Playlist detail view -->
-          <div class="view-header animate-fade-in-up">
-            <div class="view-title-section">
-              <button class="back-btn" onclick={() => selectPlaylist(null)} title="Back to all playlists">
-                <Icon name="chevron-left" size={18} />
-              </button>
-              <h1 class="view-title">{$selectedPlaylist.name}</h1>
-              <span class="view-count">{$playlistTracks.length} tracks</span>
-            </div>
-            <div class="view-actions">
-              <Button variant="ghost" size="sm" onclick={handleDeleteCurrentPlaylist}>
+        {:else if $currentView === 'playlists'}
+          {#if $selectedPlaylist}
+            <div class="view-header">
+              <div class="view-title-row">
+                <button class="back-btn" onclick={() => selectPlaylist(null)}>
+                  <Icon name="chevron-left" size={16} />
+                </button>
+                <h1 class="view-title">{$selectedPlaylist.name}</h1>
+                <span class="view-count">{$playlistTracks.length}</span>
+              </div>
+              <button class="add-btn danger" onclick={handleDeleteCurrentPlaylist}>
                 <Icon name="x" size={14} />
                 <span>Delete</span>
-              </Button>
+              </button>
             </div>
-          </div>
-          {#if $playlistTracks.length === 0}
-            <div class="placeholder-view animate-fade-in-up delay-1">
-              <Card padding="lg" radius="2xl">
-                <p class="text-secondary">This playlist is empty. Add tracks from your library.</p>
-              </Card>
-            </div>
-          {:else}
-            <div class="tracks-list animate-fade-in-up delay-1">
-              <Card padding="md" radius="2xl" class="tracks-card">
+            {#if $playlistTracks.length === 0}
+              <p class="empty-text">This playlist is empty.</p>
+            {:else}
+              <div class="tracks-list-container">
                 <TrackList
                   tracks={$playlistTracks}
                   playlistId={$selectedPlaylist?.id}
-                  onPlay={(t, i) => void handlePlayPlaylist($playlistTracks, i)}
+                  onPlay={(t: Track, i: number) => void handlePlayPlaylist($playlistTracks, i)}
                 />
-              </Card>
-            </div>
-          {/if}
-        {:else}
-          <div class="view-header animate-fade-in-up">
-            <div class="view-title-section">
-              <h1 class="view-title">Playlists</h1>
-              <span class="view-count">{$playlists.length} playlists</span>
-            </div>
-          </div>
-          {#if $playlists.length === 0}
-            <div class="placeholder-view animate-fade-in-up delay-1">
-              <Card padding="lg" radius="2xl">
-                <p class="text-secondary">No playlists yet. Click + in the sidebar to create one.</p>
-              </Card>
-            </div>
+              </div>
+            {/if}
           {:else}
-            <div class="animate-fade-in-up delay-1">
-              <PlaylistGrid playlists={$playlists} onSelect={handleSelectPlaylist} />
+            <div class="view-header">
+              <div class="view-title-row">
+                <h1 class="view-title">Playlists</h1>
+                <span class="view-count">{$playlists.length}</span>
+              </div>
             </div>
+            {#if $playlists.length === 0}
+              <p class="empty-text">No playlists yet.</p>
+            {:else}
+              <PlaylistGrid playlists={$playlists} onSelect={handleSelectPlaylist} />
+            {/if}
           {/if}
-        {/if}
 
-      {:else if $currentView === 'favorites'}
-        <div class="view-header animate-fade-in-up">
-          <div class="view-title-section">
-            <h1 class="view-title">Favorites</h1>
-            <span class="view-count">{visibleFavorites.length} tracks</span>
+        {:else if $currentView === 'favorites'}
+          <div class="view-header">
+            <div class="view-title-row">
+              <h1 class="view-title">Favorites</h1>
+              <span class="view-count">{visibleFavorites.length}</span>
+            </div>
           </div>
-        </div>
-        {#if visibleFavorites.length === 0}
-          <div class="placeholder-view animate-fade-in-up delay-1">
-            <Card padding="lg" radius="2xl">
-              <p class="text-secondary">No favorites yet — tap the heart on a track to add it here.</p>
-            </Card>
-          </div>
-        {:else}
-          <div class="tracks-list animate-fade-in-up delay-1">
-            <Card padding="md" radius="2xl" class="tracks-card">
+          {#if visibleFavorites.length === 0}
+            <p class="empty-text">No favorites yet — right-click a track to add one.</p>
+          {:else}
+            <div class="tracks-list-container">
               <TrackList
                 tracks={visibleFavorites}
-                onPlay={(t, i) => void handlePlayFromCustomList(visibleFavorites, i)}
+                onPlay={(t: Track, i: number) => void handlePlayFromCustomList(visibleFavorites, i)}
               />
-            </Card>
-          </div>
-        {/if}
+            </div>
+          {/if}
 
-      {:else if $currentView === 'recent'}
-        <div class="view-header animate-fade-in-up">
-          <div class="view-title-section">
-            <h1 class="view-title">Recently Played</h1>
-            <span class="view-count">{recentTracks.length} tracks</span>
+        {:else if $currentView === 'recent'}
+          <div class="view-header">
+            <div class="view-title-row">
+              <h1 class="view-title">Recently Played</h1>
+              <span class="view-count">{recentTracks.length}</span>
+            </div>
           </div>
-        </div>
-        {#if recentTracks.length === 0}
-          <div class="placeholder-view animate-fade-in-up delay-1">
-            <Card padding="lg" radius="2xl">
-              <p class="text-secondary">Nothing here yet — play a track and it will show up in Recent.</p>
-            </Card>
-          </div>
-        {:else}
-          <div class="tracks-list animate-fade-in-up delay-1">
-            <Card padding="md" radius="2xl" class="tracks-card">
+          {#if recentTracks.length === 0}
+            <p class="empty-text">Play some tracks to see them here.</p>
+          {:else}
+            <div class="tracks-list-container">
               <TrackList
                 tracks={recentTracks}
-                onPlay={(t, i) => void handlePlayFromCustomList(recentTracks, i)}
+                onPlay={(t: Track, i: number) => void handlePlayFromCustomList(recentTracks, i)}
               />
-            </Card>
-          </div>
+            </div>
+          {/if}
         {/if}
-      {/if}
-    </div>
-  </main>
+      </div>
+    </main>
 
-  <!-- Player Bar -->
-  <div class="app-player">
-    <PlayerBar />
+    <!-- Floating Player -->
+    <div class="app-player">
+      <PlayerBar />
+    </div>
   </div>
 </div>
 {/if}
@@ -413,425 +316,173 @@
 <QueuePanel />
 
 <style>
+  /* === App Main (right side column) === */
+  .app-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
 
+  .app-titlebar { flex-shrink: 0; }
 
   .app-content {
-    grid-area: content;
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
   }
 
-  /* Content inner */
   .content-inner {
-    padding: var(--space-6);
-    flex: 1;
-    position: relative;
-    z-index: 1;
+    padding: 32px 40px 140px 40px;
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
 
-  /* View header */
   .view-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-6);
-    animation: slideUp 0.5s var(--ease-out-expo) both;
+    margin-bottom: 32px;
   }
 
-  .view-title-section {
+  .view-title-row {
     display: flex;
     align-items: baseline;
-    gap: var(--space-3);
+    gap: 12px;
   }
 
   .view-title {
-    font-size: var(--text-2xl);
+    font-size: 28px;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.02em;
-    animation: fadeIn 0.6s var(--ease-out-quart) both;
+    letter-spacing: -0.03em;
+    margin: 0;
   }
 
   .view-count {
-    font-size: var(--text-sm);
+    font-size: 13px;
     color: var(--text-tertiary);
+    font-weight: 400;
+  }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
     font-weight: 500;
-    animation: fadeIn 0.6s var(--ease-out-quart) both;
-    animation-delay: 0.1s;
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
 
-  .view-actions {
-    display: flex;
-    gap: var(--space-2);
+  .add-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
   }
 
-  /* Scan status */
+  .add-btn.danger:hover {
+    background: rgba(220,38,38,0.15);
+    color: #ef4444;
+  }
+
   .scan-status {
-    margin-bottom: var(--space-4);
-    max-width: 680px;
-  }
-
-  .scan-row {
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
-  .scan-left {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 220px;
-  }
-
-  .scan-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent-primary);
-    box-shadow: 0 0 18px var(--accent-glow-strong);
-    animation: pulse-glow 2.4s ease-in-out infinite;
+    gap: 16px;
   }
 
   .scan-text {
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .scan-sub {
-    font-size: var(--text-xs);
-    color: var(--text-tertiary);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .scan-right {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
   }
 
   .scan-bar {
-    width: min(360px, 100%);
-    height: 8px;
-    border-radius: var(--radius-full);
-    background: hsla(0, 0%, 100%, 0.06);
-    border: 1px solid var(--glass-border);
+    flex: 1;
+    height: 4px;
+    background: var(--bg-elevated);
+    border-radius: 2px;
     overflow: hidden;
+    max-width: 300px;
   }
 
   .scan-bar-fill {
     height: 100%;
-    background: var(--accent-gradient);
-    box-shadow: 0 0 16px var(--accent-glow);
-    transition: width var(--duration-fast) linear;
-    animation: shimmer 2s ease-in-out infinite;
-    background-size: 200% 100%;
+    background: var(--text-primary);
+    transition: width 0.3s ease;
   }
 
-  /* Track list wrapper */
-  .tracks-list {
+  .tracks-list-container {
     flex: 1;
     min-height: 0;
   }
 
-  :global(.tracks-card) {
-    height: 100%;
-  }
-
-  /* Empty state */
-  .empty-state {
-    max-width: 560px;
-    margin: var(--space-16) auto 0;
-    animation: fadeInUp 0.6s var(--ease-out-expo) both;
-  }
-
-  .empty-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: var(--space-8) 0;
-  }
-
-  .empty-icon-container {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--space-8);
-  }
-
-  .empty-icon {
-    position: relative;
-    z-index: 1;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-gradient-subtle);
-    border: 1px solid hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15);
-    animation: fadeIn 0.6s var(--ease-out-quart) both;
-    animation-delay: 0.2s;
-  }
-
-  .empty-icon-ring {
-    position: absolute;
-    border-radius: 50%;
-    border: 1px solid hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.08);
-  }
-
-  .ring-1 {
-    width: 100px;
-    height: 100px;
-    animation: pulse-ring 4s ease-in-out infinite;
-    animation-delay: 0s;
-  }
-
-  .ring-2 {
-    width: 120px;
-    height: 120px;
-    animation: pulse-ring 4s ease-in-out infinite;
-    animation-delay: 0.5s;
-  }
-
-  .ring-3 {
-    width: 140px;
-    height: 140px;
-    animation: pulse-ring 4s ease-in-out infinite;
-    animation-delay: 1s;
-  }
-
-  @keyframes pulse-ring {
-    0%, 100% { opacity: 0.4; border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.06); }
-    50% { opacity: 1; border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15); }
-  }
-
-  .empty-title {
-    font-size: var(--text-xl);
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: var(--space-3);
-    letter-spacing: -0.01em;
-  }
-
-  .empty-description {
-    font-size: var(--text-md);
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: var(--space-8);
-    max-width: 400px;
-  }
-
-  .empty-actions {
-    margin-bottom: var(--space-8);
-  }
-
-  .supported-formats {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .format-label {
-    font-size: var(--text-xs);
+  .empty-text {
     color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-  }
-
-  .format-tags {
-    display: flex;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .format-tag {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-tertiary);
-    padding: 2px 8px;
-    border-radius: var(--radius-full);
-    background: hsla(0, 0%, 100%, 0.04);
-    border: 1px solid var(--glass-border);
-    letter-spacing: 0.05em;
-    transition: all var(--duration-fast) var(--ease-out-quart);
-    animation: fadeInScale 0.4s var(--ease-out-back) both;
-  }
-
-  .format-tag:hover {
-    background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.1);
-    border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
-    color: var(--accent-primary);
-    transform: translateY(-2px);
-  }
-
-  /* Placeholder views */
-  .placeholder-view {
-    max-width: 400px;
+    font-size: 14px;
+    padding: 40px 0;
   }
 
   .back-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out-quart),
-                color var(--duration-fast) var(--ease-out-quart),
-                transform var(--duration-fast) var(--ease-out-back);
-    flex-shrink: 0;
+    transition: all 0.15s ease;
   }
 
   .back-btn:hover {
-    background: var(--glass-bg-hover);
+    background: var(--bg-elevated);
     color: var(--text-primary);
-    transform: translateX(-2px);
   }
 
-  .back-btn:active {
-    transform: scale(0.95);
-  }
-
-  /* ---- Mini Player ---- */
   .mini-player {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    height: 100vh;
-    padding: var(--space-3) var(--space-4);
+    display: flex; align-items: center; gap: 12px;
+    height: 100vh; padding: 12px 16px;
     background: var(--bg-primary);
-    -webkit-app-region: drag;
-    animation: fadeIn 0.3s var(--ease-out-quart) both;
-    overflow: hidden;
+    -webkit-app-region: drag; overflow: hidden;
   }
-
   .mini-art {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-sm);
+    width: 48px; height: 48px; border-radius: 8px;
+    overflow: hidden; flex-shrink: 0;
     -webkit-app-region: no-drag;
   }
-
-  .mini-art img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
+  .mini-art img { width: 100%; height: 100%; object-fit: cover; }
   .mini-art-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-gradient-subtle);
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: var(--bg-elevated);
   }
-
-  .mini-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .mini-title {
-    font-size: var(--text-sm);
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 1px;
-  }
-
-  .mini-artist {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-  }
-
-  .mini-controls {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    -webkit-app-region: no-drag;
-  }
-
+  .mini-info { flex: 1; min-width: 0; }
+  .mini-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .mini-artist { font-size: 11px; color: var(--text-secondary); }
+  .mini-controls { display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
   .mini-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out-quart),
-                color var(--duration-fast) var(--ease-out-quart);
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); background: transparent; border: none; cursor: pointer;
   }
-
-  .mini-btn:hover {
-    background: hsla(0, 0%, 100%, 0.08);
-    color: var(--text-primary);
-  }
-
-  .mini-btn:active {
-    opacity: 0.7;
-  }
-
-  .mini-play {
-    width: 38px;
-    height: 38px;
-    background: var(--accent-gradient);
-    color: white;
-    box-shadow: 0 0 12px var(--accent-glow);
-  }
-
-  .mini-play:hover {
-    box-shadow: 0 0 20px var(--accent-glow-strong);
-  }
-
+  .mini-btn:hover { color: var(--text-primary); }
+  .mini-play { width: 38px; height: 38px; background: var(--text-primary); color: var(--bg-primary); }
   .mini-exit {
-    width: 26px;
-    height: 26px;
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-tertiary);
-    background: transparent;
-    border: 1px solid var(--glass-border);
-    cursor: pointer;
-    -webkit-app-region: no-drag;
-    transition: background var(--duration-fast) var(--ease-out-quart),
-                color var(--duration-fast) var(--ease-out-quart);
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary); background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer; -webkit-app-region: no-drag;
   }
-
-  .mini-exit:hover {
-    background: var(--glass-bg-hover);
-    color: var(--text-primary);
-  }
-
-  .mini-exit:active {
-    opacity: 0.7;
-  }
+  .mini-exit:hover { background: var(--bg-elevated); color: var(--text-primary); }
 </style>

@@ -103,3 +103,18 @@ export function formatDuration(seconds: number): string {
   }
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
+export function setVolume(v: number) {
+  playerState.update(s => ({ ...s, volume: v }));
+}
+
+export function toggleShuffle() {
+  playerState.update(s => ({ ...s, isShuffled: !s.isShuffled }));
+}
+
+export function toggleRepeat() {
+  playerState.update(s => {
+    const next = s.repeatMode === 'off' ? 'all' : s.repeatMode === 'all' ? 'one' : 'off';
+    return { ...s, repeatMode: next };
+  });
+}

@@ -117,11 +117,12 @@
 
 <div class="tracklist">
   <div class="header">
-    <div class="col col-title">Title</div>
+    <div class="col col-index">#</div>
+    <div class="col col-title">Track Name</div>
     <div class="col col-artist">Artist</div>
     <div class="col col-album">Album</div>
-    <div class="col col-fav">Fav</div>
-    <div class="col col-time">Time</div>
+    <div class="col col-time">Duration</div>
+    <div class="col col-fav"></div>
   </div>
 
   <div
@@ -144,6 +145,10 @@
             ondblclick={() => onPlay?.(track, index)}
             oncontextmenu={(e) => handleContextMenu(e, track, index)}
           >
+            <div class="cell cell-index">
+              <span class="index-num">{index + 1}</span>
+              <Icon class="index-play" name="play" size={12} />
+            </div>
             <div class="cell cell-title">
               <div class="art">
                 {#if track.artwork_path}
@@ -226,121 +231,82 @@
 
   .header {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 44px 80px;
-    gap: var(--space-3);
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--glass-border);
+    grid-template-columns: 40px 2fr 1.2fr 1.2fr 72px 40px;
+    gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--text-tertiary);
-    font-size: 10px;
-    letter-spacing: 0.12em;
+    font-size: 11px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .viewport {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    border-radius: var(--radius-2xl);
   }
 
-  .spacer {
-    position: relative;
-  }
-
-  .slice {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-  }
+  .spacer { position: relative; }
+  .slice { position: absolute; left: 0; right: 0; top: 0; }
 
   .row {
     width: 100%;
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 44px 80px;
-    gap: var(--space-3);
+    grid-template-columns: 40px 2fr 1.2fr 1.2fr 72px 40px;
+    gap: 12px;
     align-items: center;
-    padding: 0 12px;
-    border: 1px solid transparent;
-    border-left: none;
-    border-right: none;
-    border-radius: var(--radius-md);
+    padding: 0 16px;
+    border: none;
     background: transparent;
     color: var(--text-primary);
     text-align: left;
     cursor: default;
-    transition:
-      background var(--duration-fast) var(--ease-out-quart),
-      border-color var(--duration-fast) var(--ease-out-quart);
+    transition: background 0.1s ease;
   }
 
   .row:hover {
-    background: hsla(0, 0%, 100%, 0.04);
-    border-color: hsla(0, 0%, 100%, 0.06);
-  }
-
-  .row:active {
-    opacity: 0.85;
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .row:not(:last-child) {
-    border-bottom: 1px solid hsla(0, 0%, 100%, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   }
 
-  .cell {
-    min-width: 0;
-  }
+  .cell { min-width: 0; }
 
-  .cell-fav {
-    display: flex;
-    justify-content: center;
-  }
-
-  .fav {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+  .cell-index {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) var(--ease-out-quart),
-      border-color var(--duration-fast) var(--ease-out-quart);
+    color: var(--text-tertiary);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
 
-  .fav:hover {
-    background: hsla(0, 0%, 100%, 0.05);
-    border-color: hsla(0, 0%, 100%, 0.07);
+  :global(.cell-index .index-play) {
+    display: none;
+    color: var(--text-primary);
   }
+  .row:hover :global(.cell-index .index-num) { display: none; }
+  .row:hover :global(.cell-index .index-play) { display: block; }
 
-  .fav:active {
-    opacity: 0.7;
-  }
-
-  .fav.active {
-    background: var(--accent-gradient-subtle);
-    border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
-  }
+  .col-index { text-align: center; }
 
   .cell-title {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 12px;
     min-width: 0;
   }
 
   .art {
     width: 36px;
     height: 36px;
-    border-radius: var(--radius-lg);
+    border-radius: 4px;
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--glass-border);
     background: var(--bg-tertiary);
   }
 
@@ -367,24 +333,50 @@
   }
 
   .title {
-    font-size: var(--text-sm);
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-primary);
   }
 
   .sub {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
     color: var(--text-tertiary);
-    letter-spacing: 0.08em;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
+
+  .cell-artist, .cell-album {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .cell-fav {
+    display: flex;
+    justify-content: center;
+  }
+
+  .fav {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity 0.1s;
+  }
+
+  .row:hover .fav { opacity: 0.7; }
+  .fav:hover { opacity: 1 !important; }
+  .fav.active { opacity: 1; }
 
   .cell-time {
     color: var(--text-tertiary);
     font-variant-numeric: tabular-nums;
     text-align: right;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 13px;
   }
 </style>
