@@ -34,20 +34,22 @@ export async function updateTrackMetadata(
     artwork_path?: string;
   },
 ): Promise<void> {
+  // Always send values as strings (even empty) so the backend performs the update.
+  // Only use null for fields that were truly not provided (i.e. undefined in the input).
   return invoke('edit_track_metadata', {
     track_id: trackId,
-    title: fields.title ?? null,
-    artist: fields.artist ?? null,
-    album: fields.album ?? null,
-    album_artist: fields.album_artist ?? null,
-    genre: fields.genre ?? null,
-    year: fields.year ?? null,
-    track_number: fields.track_number ?? null,
-    disc_number: fields.disc_number ?? null,
-    composer: fields.composer ?? null,
-    publisher: fields.publisher ?? null,
-    comments: fields.comments ?? null,
-    artwork_path: fields.artwork_path ?? null,
+    title: fields.title !== undefined ? fields.title : null,
+    artist: fields.artist !== undefined ? fields.artist : null,
+    album: fields.album !== undefined ? fields.album : null,
+    album_artist: fields.album_artist !== undefined ? fields.album_artist : null,
+    genre: fields.genre !== undefined ? fields.genre : null,
+    year: fields.year !== undefined ? fields.year : null,
+    track_number: fields.track_number !== undefined ? fields.track_number : null,
+    disc_number: fields.disc_number !== undefined ? fields.disc_number : null,
+    composer: fields.composer !== undefined ? fields.composer : null,
+    publisher: fields.publisher !== undefined ? fields.publisher : null,
+    comments: fields.comments !== undefined ? fields.comments : null,
+    artwork_path: fields.artwork_path !== undefined ? fields.artwork_path : null,
   });
 }
 

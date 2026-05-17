@@ -19,7 +19,7 @@ pub fn scan_directory(app_handle: &AppHandle, target_dir: &str) -> Result<(), St
     
     // 1. Collect all valid audio files
     let mut files = Vec::new();
-    let valid_exts = ["mp3", "flac", "wav", "m4a", "ogg", "aac", "aiff", "wma", "opus"];
+    let valid_exts = ["mp3", "flac", "wav", "m4a", "ogg", "aac", "aiff", "wma", "opus", "webm"];
     
     for entry in WalkDir::new(target_dir).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();

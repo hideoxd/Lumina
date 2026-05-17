@@ -52,15 +52,15 @@
         title,
         artist,
         album,
-        album_artist: albumArtist || undefined,
-        genre: genre || undefined,
-        year: year || undefined,
-        track_number: trackNumber || undefined,
-        disc_number: discNumber || undefined,
-        composer: composer || undefined,
-        publisher: publisher || undefined,
-        comments: comments || undefined,
-        artwork_path: artworkPath || undefined,
+        album_artist: albumArtist,
+        genre,
+        year,
+        track_number: trackNumber,
+        disc_number: discNumber,
+        composer,
+        publisher,
+        comments,
+        artwork_path: artworkPath,
       });
       patchTrack(track.id, {
         title,
@@ -102,8 +102,8 @@
     <div class="edit-modal">
       <div class="field-row">
         <div class="field art-picker">
-          <label class="field-label">Cover Image</label>
-          <button class="art-btn" onclick={handleSelectImage} title={artworkPath || 'No image'}>
+          <label class="field-label" for="cover-image">Cover Image</label>
+          <button id="cover-image" class="art-btn" onclick={handleSelectImage} title={artworkPath || 'No image'}>
             {#if artworkPath}
               <span class="art-path truncate">{artworkPath.split(/[/\\]/).pop()}</span>
             {:else}

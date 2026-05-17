@@ -109,10 +109,12 @@ pub fn update_track_metadata(
     comments: Option<&str>,
     artwork_path: Option<&str>,
 ) -> Result<()> {
+    // Always update all provided fields. If Some(""), it clears the field.
+    // If None, it means "don't change this field".
     let mut sets: Vec<String> = Vec::new();
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
 
-    macro_rules! push_str {
+    macro_rules! push_field {
         ($col:expr, $val:expr) => {
             if let Some(v) = $val {
                 sets.push(format!("{} = ?{}", $col, sets.len() + 1));
@@ -121,7 +123,7 @@ pub fn update_track_metadata(
         };
     }
 
-    macro_rules! push_i32 {
+    macro_rules! push_int {
         ($col:expr, $val:expr) => {
             if let Some(v) = $val {
                 sets.push(format!("{} = ?{}", $col, sets.len() + 1));
@@ -130,18 +132,18 @@ pub fn update_track_metadata(
         };
     }
 
-    push_str!("title", title);
-    push_str!("artist", artist);
-    push_str!("album", album);
-    push_str!("album_artist", album_artist);
-    push_str!("genre", genre);
-    push_i32!("year", year);
-    push_i32!("track_number", track_number);
-    push_i32!("disc_number", disc_number);
-    push_str!("composer", composer);
-    push_str!("publisher", publisher);
-    push_str!("comments", comments);
-    push_str!("artwork_path", artwork_path);
+    push_field!("title", title);
+    push_field!("artist", artist);
+    push_field!("album", album);
+    push_field!("album_artist", album_artist);
+    push_field!("genre", genre);
+    push_int!("year", year);
+    push_int!("track_number", track_number);
+    push_int!("disc_number", disc_number);
+    push_field!("composer", composer);
+    push_field!("publisher", publisher);
+    push_field!("comments", comments);
+    push_field!("artwork_path", artwork_path);
 
     if sets.is_empty() {
         return Ok(());

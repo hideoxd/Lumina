@@ -121,20 +121,23 @@
 
   let youtubeUrl = $state('');
   let downloadingYoutube = $state(false);
+  let downloadStatus = $state('');
   
   async function handleDownloadYoutube() {
     if (!youtubeUrl.trim() || downloadingYoutube) return;
     downloadingYoutube = true;
+    downloadStatus = 'Downloading… (first time may take a moment to set up)';
     try {
-      await downloadYoutubeVideo(youtubeUrl.trim());
+      const filePath = await downloadYoutubeVideo(youtubeUrl.trim());
       youtubeUrl = '';
-      // A scan is triggered automatically on the rust side, we just wait a bit or we could refresh tracks
-      setTimeout(() => {
-        window.location.reload(); // Quick way to ensure full library refresh for now
-      }, 1000);
-    } catch (e) {
+      downloadStatus = 'Download complete! Refreshing library…';
+      await refreshTracks();
+      downloadStatus = 'Added to library successfully!';
+      setTimeout(() => { downloadStatus = ''; }, 3000);
+    } catch (e: any) {
       console.error('Failed to download youtube video:', e);
-      alert('Failed to download: ' + e);
+      downloadStatus = '';
+      alert('Download failed: ' + (typeof e === 'string' ? e : e?.message || JSON.stringify(e)));
     } finally {
       downloadingYoutube = false;
     }
@@ -348,12 +351,16 @@
                 />
                 <button class="yt-download-btn" onclick={handleDownloadYoutube} disabled={downloadingYoutube || !youtubeUrl.trim()}>
                   {#if downloadingYoutube}
-                    <span class="spinner"></span>
+                    <span class="spinner"></span> Downloading…
                   {:else}
                     <Icon name="download" size={16} /> Download
                   {/if}
                 </button>
               </div>
+              {#if downloadStatus}
+                <p class="yt-status">{downloadStatus}</p>
+              {/if}
+              <p class="yt-note">Requires <a href="https://ffmpeg.org" target="_blank" rel="noopener">ffmpeg</a> installed on your system for audio conversion.</p>
             </div>
           </div>
         {/if}
@@ -711,5 +718,20 @@
     border-top-color: transparent;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
+  }
+  .yt-status {
+    color: #4ade80;
+    font-size: 13px;
+    margin: 0;
+    animation: fadeIn 0.3s ease;
+  }
+  .yt-note {
+    color: var(--text-disabled);
+    font-size: 11px;
+    margin: 8px 0 0 0;
+  }
+  .yt-note a {
+    color: var(--text-secondary);
+    text-decoration: underline;
   }
 </style>
