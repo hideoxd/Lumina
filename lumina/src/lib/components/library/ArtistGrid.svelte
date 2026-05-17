@@ -43,17 +43,18 @@
   );
 </script>
 
-<div class="grid">
+<div class="grid stagger-enter">
   {#if filtered.length === 0}
     <GlassCard padding="lg" radius="2xl">
       <p class="empty">No artists match your search.</p>
     </GlassCard>
   {:else}
-    {#each filtered as artist (artist.id)}
+    {#each filtered as artist, idx (artist.id)}
       <GlassCard
         padding="md"
         radius="2xl"
-        class="artist"
+        class="artist hover-lift"
+        style="animation-delay: {idx * 40}ms"
         ondblclick={() => onPlayArtist?.(getArtistTracks(artist))}
       >
         <div class="row">

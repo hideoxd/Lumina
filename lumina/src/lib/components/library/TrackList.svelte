@@ -1,16 +1,15 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-  import type { Track } from '$lib/types';
+  import ContextMenu from '$lib/components/glass/ContextMenu.svelte';
+  import type { Track, MenuItem } from '$lib/types';
   import { getArtworkUrl } from '$lib/utils/artwork';
   import { setTrackFavorite } from '$lib/commands/library';
   import { patchTrack } from '$lib/stores/library';
+  import { setQueue, playQueueIndex } from '$lib/stores/queue';
+  import { playlists, refreshPlaylists } from '$lib/stores/playlists';
+  import { addTrackToPlaylist, removeTrackFromPlaylist } from '$lib/commands/library';
 
-  export interface Props {
-    tracks: Track[];
-    onPlay?: (track: Track, index: number) => void;
-  }
-
-  let { tracks, onPlay }: Props = $props();
+  let { tracks, onPlay, playlistId }: { tracks: Track[]; onPlay?: (track: Track, index: number) => void; playlistId?: string } = $props();
 
   const rowHeight = 52;
   let viewportEl: HTMLDivElement;
@@ -24,6 +23,8 @@
 
   let offsetTop = $derived(startIndex * rowHeight);
   let totalHeight = $derived(tracks.length * rowHeight);
+
+  let contextMenu = $state<{ x: number; y: number; track: Track; index: number } | null>(null);
 
   const artworkCache = new Map<string, string>();
 
@@ -53,6 +54,56 @@
     } catch {
       patchTrack(track.id, { favorite: !next });
     }
+  }
+
+  function handleContextMenu(e: MouseEvent, track: Track, index: number) {
+    e.preventDefault();
+    contextMenu = { x: e.clientX, y: e.clientY, track, index };
+  }
+
+  function closeContextMenu() {
+    contextMenu = null;
+  }
+
+  function getContextMenuItems(track: Track, index: number): MenuItem[] {
+    const items: MenuItem[] = [
+      { id: 'play', label: 'Play', icon: 'play', onclick: () => onPlay?.(track, index) },
+      { id: 'play-next', label: 'Play Next', icon: 'skip-forward', onclick: () => {} },
+      { id: 'add-to-queue', label: 'Add to Queue', icon: 'queue', onclick: () => {
+        setQueue(tracks, index);
+      }},
+      { id: 'divider1', divider: true },
+    ];
+
+    const playlistItems = $playlists.map(pl => ({
+      id: pl.id,
+      label: pl.name,
+      onclick: () => { void addTrackToPlaylist(pl.id, track.id).then(() => refreshPlaylists()); }
+    } as MenuItem));
+
+    if (playlistItems.length > 0) {
+      items.push({ id: 'add-to-playlist', label: 'Add to Playlist', icon: 'plus', children: playlistItems });
+    }
+
+    if (playlistId) {
+      items.push(
+        { id: 'divider2', divider: true },
+        { id: 'remove-playlist', label: 'Remove from Playlist', icon: 'x', danger: true,
+          onclick: () => { void removeTrackFromPlaylist(playlistId, track.id).then(() => refreshPlaylists()); } }
+      );
+    }
+
+    items.push(
+      { id: 'divider3', divider: true },
+      {
+        id: 'favorite',
+        label: track.favorite ? 'Remove from Favorites' : 'Add to Favorites',
+        icon: track.favorite ? 'heart-filled' : 'heart',
+        onclick: () => void toggleFavorite(track),
+      },
+    );
+
+    return items;
   }
 </script>
 
@@ -85,6 +136,7 @@
             style="height: {rowHeight}px"
             title="Double click to play"
             ondblclick={() => onPlay?.(track, index)}
+            oncontextmenu={(e) => handleContextMenu(e, track, index)}
           >
             <div class="cell cell-title">
               <div class="art">
@@ -147,6 +199,15 @@
     </div>
   </div>
 </div>
+
+{#if contextMenu}
+  <ContextMenu
+    items={getContextMenuItems(contextMenu.track, contextMenu.index)}
+    x={contextMenu.x}
+    y={contextMenu.y}
+    onClose={closeContextMenu}
+  />
+{/if}
 
 <style>
   .tracklist {

@@ -320,6 +320,7 @@
               <GlassCard padding="md" radius="2xl" class="tracks-card">
                 <TrackList
                   tracks={$playlistTracks}
+                  playlistId={$selectedPlaylist?.id}
                   onPlay={(t, i) => void handlePlayPlaylist($playlistTracks, i)}
                 />
               </GlassCard>

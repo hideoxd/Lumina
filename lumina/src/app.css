@@ -77,13 +77,13 @@
   --duration-slow: 400ms;
   --duration-slower: 600ms;
 
-  /* Border Radius */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
+  /* Border Radius — more rounded for 2026 aesthetic */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-2xl: 32px;
   --radius-full: 9999px;
 
   /* Spacing */
@@ -458,6 +458,17 @@ img, svg {
   }
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -477,6 +488,10 @@ img, svg {
   animation: fadeInUp var(--duration-slow) var(--ease-out-expo) both;
 }
 
+.animate-fade-in-down {
+  animation: fadeInDown var(--duration-slow) var(--ease-out-expo) both;
+}
+
 .animate-fade-in-scale {
   animation: fadeInScale var(--duration-slow) var(--ease-out-expo) both;
 }
@@ -489,6 +504,21 @@ img, svg {
   animation: slideInRight var(--duration-slow) var(--ease-out-expo) both;
 }
 
+.animate-scale-in {
+  animation: scaleIn var(--duration-slow) var(--ease-out-back) both;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.06),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
 /* Stagger delay utilities */
 .delay-1 { animation-delay: 50ms; }
 .delay-2 { animation-delay: 100ms; }
@@ -498,6 +528,39 @@ img, svg {
 .delay-6 { animation-delay: 300ms; }
 .delay-7 { animation-delay: 350ms; }
 .delay-8 { animation-delay: 400ms; }
+.delay-9 { animation-delay: 450ms; }
+.delay-10 { animation-delay: 500ms; }
+.delay-12 { animation-delay: 600ms; }
+
+/* Hover lift effect */
+.hover-lift {
+  transition:
+    transform var(--duration-normal) var(--ease-out-quart),
+    box-shadow var(--duration-normal) var(--ease-out-quart);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.hover-lift:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* Glass card entrance stagger */
+.stagger-enter > * {
+  animation: fadeInUp var(--duration-slow) var(--ease-out-expo) both;
+}
+
+.stagger-enter > *:nth-child(1) { animation-delay: 30ms; }
+.stagger-enter > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-enter > *:nth-child(3) { animation-delay: 90ms; }
+.stagger-enter > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-enter > *:nth-child(5) { animation-delay: 150ms; }
+.stagger-enter > *:nth-child(6) { animation-delay: 180ms; }
+.stagger-enter > *:nth-child(7) { animation-delay: 210ms; }
+.stagger-enter > *:nth-child(8) { animation-delay: 240ms; }
 
 /* ============================================================
    APP LAYOUT

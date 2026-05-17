@@ -13,9 +13,12 @@
   }
 </script>
 
-<div class="playlist-grid">
-  {#each playlists as pl}
-    <button class="playlist-card glass" onclick={() => onSelect(pl)}>
+<div class="playlist-grid stagger-enter">
+  {#each playlists as pl, idx}
+    <button
+      class="playlist-card glass hover-lift"
+      style="animation: fadeInUp 400ms var(--ease-out-expo) both; animation-delay: {idx * 50}ms"
+      onclick={() => onSelect(pl)}>
       <div class="art">
         {#if pl.artwork_path}
           <img src={pl.artwork_path} alt="" />

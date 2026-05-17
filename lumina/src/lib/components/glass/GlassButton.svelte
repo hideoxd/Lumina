@@ -28,6 +28,23 @@
     title = '',
     onclick,
   }: Props = $props();
+
+  function handleClick(e: MouseEvent) {
+    if (disabled || loading) return;
+    const btn = e.currentTarget as HTMLElement;
+    const ripple = document.createElement('span');
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    ripple.className = 'ripple';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+    onclick?.(e);
+  }
 </script>
 
 <button
@@ -37,7 +54,8 @@
   {style}
   {title}
   {disabled}
-  onclick={onclick}
+  onclick={handleClick}
+  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(e as any); }}
 >
   {#if loading}
     <span class="spinner"></span>
@@ -57,6 +75,8 @@
     gap: var(--space-2);
     font-family: var(--font-sans);
     font-weight: 500;
+    position: relative;
+    overflow: hidden;
     white-space: nowrap;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
@@ -201,22 +221,35 @@
 
   /* Loading spinner */
   .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid hsla(0, 0%, 100%, 0.2);
-    border-top-color: var(--text-primary);
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
   }
 
-  .hidden {
-    visibility: hidden;
+  .ripple {
     position: absolute;
+    border-radius: 50%;
+    background: hsla(0, 0%, 100%, 0.25);
+    pointer-events: none;
+    animation: rippleAnim 600ms var(--ease-out-expo) forwards;
   }
 
-  .btn-content {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
+  @keyframes rippleAnim {
+    from {
+      transform: scale(0);
+      opacity: 0.6;
+    }
+    to {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 </style>

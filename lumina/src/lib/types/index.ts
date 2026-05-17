@@ -89,6 +89,19 @@ export interface NavItem {
   badge?: number;
 }
 
+/** Context menu item */
+export interface MenuItem {
+  id: string;
+  label: string;
+  icon?: string;
+  shortcut?: string;
+  danger?: boolean;
+  disabled?: boolean;
+  divider?: boolean;
+  children?: MenuItem[];
+  onclick?: () => void;
+}
+
 /** Theme preset */
 export interface ThemePreset {
   id: string;

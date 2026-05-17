@@ -44,17 +44,18 @@
   );
 </script>
 
-<div class="grid">
+<div class="grid stagger-enter">
   {#if filtered.length === 0}
     <GlassCard padding="lg" radius="2xl">
       <p class="empty">No albums match your search.</p>
     </GlassCard>
   {:else}
-    {#each filtered as album (album.id)}
+    {#each filtered as album, idx (album.id)}
       <GlassCard
         padding="md"
         radius="2xl"
-        class="album"
+        class="album hover-lift"
+        style="animation-delay: {idx * 40}ms"
         onclick={() => {
           /* reserved for album detail later */
         }}
