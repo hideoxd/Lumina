@@ -1,17 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-
-  export interface MenuItem {
-    id: string;
-    label: string;
-    icon?: string;
-    shortcut?: string;
-    danger?: boolean;
-    disabled?: boolean;
-    divider?: boolean;
-    children?: MenuItem[];
-    onclick?: () => void;
-  }
+  import type { MenuItem } from '$lib/types';
 
   let {
     items,
@@ -86,6 +75,7 @@
       {:else}
         <div
           class="menu-item-wrapper"
+          role="group"
           onmouseenter={() => { if (item.children) hoveredSubmenu = item.id; }}
           onmouseleave={() => { if (item.children) hoveredSubmenu = null; }}
         >

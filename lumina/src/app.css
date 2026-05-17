@@ -612,7 +612,7 @@ img, svg {
 }
 
 .hover-slide:hover {
-  transform: translateX(4px);
+  background: var(--glass-bg-hover);
 }
 
 /* Smooth transitions for all interactive elements */

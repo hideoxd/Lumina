@@ -263,6 +263,35 @@
     align-items: center;
     padding: 0 12px;
     border: 1px solid transparent;
+    border-left: none;
+    border-right: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: default;
+    transition:
+      background var(--duration-fast) var(--ease-out-quart),
+      border-color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .row:hover {
+    background: hsla(0, 0%, 100%, 0.04);
+    border-color: hsla(0, 0%, 100%, 0.06);
+  }
+
+  .row:active {
+    opacity: 0.85;
+  }
+
+  .row:not(:last-child) {
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.03);
+  }
+
+  .cell {
+    min-width: 0;
+  }
+
   .cell-fav {
     display: flex;
     justify-content: center;
@@ -277,26 +306,24 @@
     justify-content: center;
     background: transparent;
     border: 1px solid transparent;
+    cursor: pointer;
     transition:
       background var(--duration-fast) var(--ease-out-quart),
-      border-color var(--duration-fast) var(--ease-out-quart),
-      transform var(--duration-fast) var(--ease-out-back);
+      border-color var(--duration-fast) var(--ease-out-quart);
   }
 
   .fav:hover {
     background: hsla(0, 0%, 100%, 0.05);
     border-color: hsla(0, 0%, 100%, 0.07);
-    transform: scale(1.15);
   }
 
   .fav:active {
-    transform: scale(0.9);
+    opacity: 0.7;
   }
 
   .fav.active {
     background: var(--accent-gradient-subtle);
     border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
-    animation: bounceIn 0.4s var(--ease-out-back) both;
   }
 
   .cell-title {
@@ -315,11 +342,6 @@
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--glass-border);
     background: var(--bg-tertiary);
-    transition: transform var(--duration-fast) var(--ease-out-back);
-  }
-
-  .row:hover .art {
-    transform: scale(1.08);
   }
 
   .art img {

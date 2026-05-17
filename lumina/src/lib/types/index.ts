@@ -95,7 +95,7 @@ export interface NavItem {
 /** Context menu item */
 export interface MenuItem {
   id: string;
-  label: string;
+  label?: string;
   icon?: string;
   shortcut?: string;
   danger?: boolean;

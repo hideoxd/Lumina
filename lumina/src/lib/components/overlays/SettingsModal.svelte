@@ -32,6 +32,7 @@
 
   async function toggleMiniPlayer(checked: boolean) {
     if (checked) {
+      settingsOpen.set(false);
       try {
         const size = await appWindow.innerSize();
         lastWindowSize.set({ width: size.width, height: size.height });

@@ -385,7 +385,7 @@
   }
 
   .play.playing {
-    animation: pulse-glow 3.5s ease-in-out infinite;
+    box-shadow: 0 0 40px var(--accent-glow-strong);
   }
 
   @keyframes spin-slow {
