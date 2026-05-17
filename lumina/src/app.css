@@ -13,8 +13,9 @@
   --bg-elevated: #1F1F1F;
 
   /* Glass properties */
-
-
+  --glass-bg: rgba(20, 20, 20, 0.92);
+  --glass-bg-hover: rgba(30, 30, 30, 0.95);
+  --glass-bg-active: rgba(15, 15, 15, 0.97);
 
   --glass-border: hsla(0, 0%, 100%, 0.1);
   --glass-border-hover: hsla(0, 0%, 100%, 0.18);
@@ -124,7 +125,9 @@
   --bg-tertiary: hsl(225, 12%, 88%);
   --bg-elevated: hsl(225, 10%, 100%);
 
-
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-hover: rgba(255, 255, 255, 0.92);
+  --glass-bg-active: rgba(240, 240, 240, 0.95);
 
   --glass-border: hsla(0, 0%, 0%, 0.08);
   --glass-border-hover: hsla(0, 0%, 0%, 0.14);
@@ -309,12 +312,12 @@ img, svg {
 
 /* Accent-bordered glass */
 .glass-accent {
-  border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.25);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .glass-accent:hover {
-  border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.4);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ============================================================

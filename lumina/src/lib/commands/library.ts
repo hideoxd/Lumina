@@ -34,8 +34,6 @@ export async function updateTrackMetadata(
     artwork_path?: string;
   },
 ): Promise<void> {
-  // Always send values as strings (even empty) so the backend performs the update.
-  // Only use null for fields that were truly not provided (i.e. undefined in the input).
   return invoke('edit_track_metadata', {
     track_id: trackId,
     title: fields.title !== undefined ? fields.title : null,

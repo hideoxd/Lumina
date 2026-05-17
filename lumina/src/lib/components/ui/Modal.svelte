@@ -52,7 +52,7 @@
 
   function handleBackdropKeydown(e: KeyboardEvent) {
     if (!open) return;
-    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Escape') {
       e.preventDefault();
       close();
     }
@@ -70,7 +70,7 @@
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
   >
-<div class="dialog"
+    <div class="dialog"
       role="dialog"
       aria-modal="true"
       aria-label={title || 'Dialog'}
@@ -79,7 +79,7 @@
       onkeydown={(e) => e.stopPropagation()}
       onclick={(e) => e.stopPropagation()}
     >
-      <Card padding="lg" radius="2xl" class="modal-surface" accent>
+      <div class="modal-surface">
         <div class="header">
           <div class="title-row">
             <h2 class="title">{title}</h2>
@@ -98,7 +98,7 @@
             {@render footer()}
           </div>
         {/if}
-      </Card>
+      </div>
     </div>
   </div>
 {/if}
@@ -112,20 +112,10 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-6);
-
-    background:
-      radial-gradient(1200px 800px at 30% 20%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.10) 0%, transparent 60%),
-      radial-gradient(900px 700px at 80% 80%, hsla(calc(var(--accent-h) + 60), 90%, 60%, 0.08) 0%, transparent 55%),
-      hsla(0, 0%, 0%, 0.45);
-
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     animation: fadeIn var(--duration-normal) var(--ease-out-quart) both;
-  }
-
-  :global([data-theme="light"]) .backdrop {
-    background:
-      radial-gradient(1200px 800px at 30% 20%, hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.12) 0%, transparent 60%),
-      radial-gradient(900px 700px at 80% 80%, hsla(calc(var(--accent-h) + 60), 90%, 60%, 0.10) 0%, transparent 55%),
-      hsla(0, 0%, 100%, 0.55);
   }
 
   .dialog {
@@ -134,11 +124,18 @@
     animation: fadeInScale var(--duration-slow) var(--ease-out-expo) both;
   }
 
-  :global(.modal-surface) {
+  .modal-surface {
     max-height: inherit;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: rgba(18, 18, 18, 0.98);
+    backdrop-filter: blur(40px) saturate(1.5);
+    -webkit-backdrop-filter: blur(40px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-xl);
   }
 
   .header {
@@ -147,7 +144,7 @@
     justify-content: space-between;
     gap: var(--space-4);
     padding-bottom: var(--space-4);
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .title {
@@ -163,7 +160,7 @@
 
   .footer {
     padding-top: var(--space-4);
-    border-top: 1px solid var(--glass-border);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     margin-top: var(--space-4);
   }
 </style>

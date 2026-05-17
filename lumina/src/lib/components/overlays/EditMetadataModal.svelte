@@ -48,7 +48,7 @@
     if (!track) return;
     saving = true;
     try {
-      await updateTrackMetadata(track.id, {
+      const payload = {
         title,
         artist,
         album,
@@ -61,7 +61,10 @@
         publisher,
         comments,
         artwork_path: artworkPath,
-      });
+      };
+      console.log('[Lumina] Saving metadata for track:', track.id, payload);
+      await updateTrackMetadata(track.id, payload);
+      console.log('[Lumina] Metadata saved successfully');
       patchTrack(track.id, {
         title,
         artist,
@@ -77,8 +80,9 @@
         artwork_path: artworkPath || null,
       } as Partial<Track>);
       onClose();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to save metadata', e);
+      alert('Failed to save metadata: ' + (typeof e === 'string' ? e : e?.message || JSON.stringify(e)));
     } finally {
       saving = false;
     }
