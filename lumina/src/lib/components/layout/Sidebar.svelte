@@ -4,17 +4,44 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
   import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import GlassModal from '$lib/components/glass/GlassModal.svelte';
   import { currentView, sidebarCollapsed, navItems, navigateTo, toggleSidebar } from '$lib/stores/ui';
   import { trackCount } from '$lib/stores/library';
+  import { playlists, refreshPlaylists, selectPlaylist } from '$lib/stores/playlists';
   import type { ViewMode } from '$lib/types';
   import { addMusicFolderWithDialog } from '$lib/controllers/library';
+  import { createPlaylist } from '$lib/commands/library';
+
+  let showCreateModal = $state(false);
+  let newPlaylistName = $state('');
 
   function handleNavClick(view: ViewMode) {
+    selectPlaylist(null);
     navigateTo(view);
   }
 
   async function handleAddFolder() {
     await addMusicFolderWithDialog();
+  }
+
+  async function handleCreatePlaylist() {
+    const name = newPlaylistName.trim();
+    if (!name) return;
+    try {
+      await createPlaylist(name);
+      newPlaylistName = '';
+      showCreateModal = false;
+      await refreshPlaylists();
+      navigateTo('playlists');
+    } catch (e) {
+      console.error('Failed to create playlist', e);
+    }
+  }
+
+  function handlePlaylistClick(playlistId: string) {
+    const pl = $playlists.find(p => p.id === playlistId);
+    if (pl) selectPlaylist(pl);
+    navigateTo('playlists');
   }
 </script>
 
@@ -69,7 +96,7 @@
       {/if}
     </button>
 
-    <button class="nav-item action-item" title="Create Playlist">
+    <button class="nav-item action-item" title="Create Playlist" onclick={() => showCreateModal = true}>
       <div class="nav-icon">
         <Icon name="plus" size={18} />
       </div>
@@ -79,18 +106,39 @@
     </button>
   </div>
 
-  <!-- Playlists section (placeholder) -->
+  <!-- Playlists section -->
   <div class="sidebar-section playlists-section">
     <div class="section-header">
       <span class="section-label">PLAYLISTS</span>
     </div>
 
-    <div class="empty-playlists">
-      {#if !$sidebarCollapsed}
-        <p class="empty-text">No playlists yet</p>
-        <p class="empty-hint">Create one to get started</p>
-      {/if}
-    </div>
+    {#if $playlists.length === 0}
+      <div class="empty-playlists">
+        {#if !$sidebarCollapsed}
+          <p class="empty-text">No playlists yet</p>
+          <p class="empty-hint">Tap + to create one</p>
+        {/if}
+      </div>
+    {:else}
+      <nav class="nav-list">
+        {#each $playlists as pl}
+          <button
+            class="nav-item"
+            class:active={$currentView === 'playlists'}
+            onclick={() => handlePlaylistClick(pl.id)}
+            title={pl.name}
+          >
+            <div class="nav-icon">
+              <Icon name="list" size={18} />
+            </div>
+            {#if !$sidebarCollapsed}
+              <span class="nav-label truncate">{pl.name}</span>
+              <span class="nav-badge">{pl.track_count}</span>
+            {/if}
+          </button>
+        {/each}
+      </nav>
+    {/if}
   </div>
 
   <!-- Collapse toggle -->
@@ -101,7 +149,58 @@
   </div>
 </aside>
 
+{#if showCreateModal}
+  <GlassModal title="New Playlist" size="sm" open={showCreateModal} onClose={() => showCreateModal = false}>
+    {#snippet children()}
+      <div class="create-modal">
+        <input
+          type="text"
+          class="create-input"
+          placeholder="Playlist name"
+          bind:value={newPlaylistName}
+          onkeydown={(e) => { if (e.key === 'Enter') handleCreatePlaylist(); }}
+        />
+      </div>
+    {/snippet}
+    {#snippet footer()}
+      <div class="create-footer">
+        <GlassButton variant="ghost" onclick={() => showCreateModal = false}>Cancel</GlassButton>
+        <GlassButton variant="primary" onclick={handleCreatePlaylist} disabled={!newPlaylistName.trim()}>
+          Create
+        </GlassButton>
+      </div>
+    {/snippet}
+  </GlassModal>
+{/if}
+
 <style>
+  .create-modal {
+    padding: var(--space-2) 0;
+  }
+
+  .create-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .create-input:focus {
+    border-color: var(--accent-primary);
+  }
+
+  .create-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
   .sidebar {
     display: flex;
     flex-direction: column;

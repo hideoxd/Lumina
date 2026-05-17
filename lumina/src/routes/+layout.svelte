@@ -33,8 +33,8 @@
         <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="hsl(270, 95%, 65%)" />
-              <stop offset="100%" stop-color="hsl(320, 90%, 60%)" />
+              <stop offset="0%" stop-color="var(--accent-primary)" />
+              <stop offset="100%" stop-color="var(--accent-secondary)" />
             </linearGradient>
           </defs>
           <circle cx="32" cy="32" r="28" stroke="url(#logoGrad)" stroke-width="2.5" fill="none" opacity="0.3" />

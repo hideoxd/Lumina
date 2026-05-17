@@ -18,17 +18,17 @@ export function patchTrack(trackId: string, patch: Partial<Track>) {
 export const albums = derived(tracks, ($tracks) => {
   const albumMap = new Map<string, Album>();
   for (const track of $tracks) {
-    const key = `${track.album}::${track.album_artist || track.artist}`;
+    const key = `${track.album}::${track.album_artist ?? track.artist}`;
     if (!albumMap.has(key)) {
       albumMap.set(key, {
         id: key,
         title: track.album || 'Unknown Album',
-        artist: track.album_artist || track.artist || 'Unknown Artist',
+        artist: track.album_artist ?? track.artist ?? 'Unknown Artist',
         year: track.year,
         artwork_path: track.artwork_path,
         track_count: 0,
         total_duration: 0,
-        genre: track.genre || '',
+          genre: track.genre ?? '',
       });
     }
     const album = albumMap.get(key)!;
@@ -83,7 +83,7 @@ export const visibleTracks = derived(
 
     if (q.length > 0) {
       list = list.filter((t) => {
-        const hay = `${t.title} ${t.artist} ${t.album} ${t.genre}`.toLowerCase();
+        const hay = `${t.title} ${t.artist} ${t.album} ${t.album_artist ?? ''} ${t.genre ?? ''}`.toLowerCase();
         return hay.includes(q);
       });
     }

@@ -15,6 +15,7 @@
     class?: string;
     style?: string;
     onclick?: (e: MouseEvent) => void;
+    ondblclick?: (e: MouseEvent) => void;
   }
 
   let {
@@ -27,7 +28,11 @@
     class: className = '',
     style = '',
     onclick,
+    ondblclick,
   }: Props = $props();
+
+  let isClickable = $derived(!!onclick || !!ondblclick);
+  let isInteractive = $derived(interactive || isClickable);
 
   const paddingMap: Record<string, string> = {
     none: '0',
@@ -45,18 +50,38 @@
     xl: 'var(--radius-xl)',
     '2xl': 'var(--radius-2xl)',
   };
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    if (onclick) {
+      onclick(new MouseEvent('click'));
+    } else if (ondblclick) {
+      ondblclick(new MouseEvent('dblclick'));
+    }
+  }
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="glass-card {interactive ? 'glass-interactive' : ''} {accent ? 'glass-accent' : ''} {glow ? 'glass-glow' : ''} {className}"
-  style="padding: {paddingMap[padding]}; border-radius: {radiusMap[radius]}; {style}"
-  onclick={onclick}
-  role={onclick ? 'button' : undefined}
-  tabindex={onclick ? 0 : undefined}
->
-  {@render children()}
-</div>
+{#if isClickable}
+  <div
+    class="glass-card {isInteractive ? 'glass-interactive' : ''} {accent ? 'glass-accent' : ''} {glow ? 'glass-glow' : ''} {className}"
+    style="padding: {paddingMap[padding]}; border-radius: {radiusMap[radius]}; {style}"
+    role="button"
+    tabindex="0"
+    onclick={onclick}
+    ondblclick={ondblclick}
+    onkeydown={handleKeydown}
+  >
+    {@render children()}
+  </div>
+{:else}
+  <div
+    class="glass-card {isInteractive ? 'glass-interactive' : ''} {accent ? 'glass-accent' : ''} {glow ? 'glass-glow' : ''} {className}"
+    style="padding: {paddingMap[padding]}; border-radius: {radiusMap[radius]}; {style}"
+  >
+    {@render children()}
+  </div>
+{/if}
 
 <style>
   .glass-card {
@@ -67,6 +92,7 @@
     box-shadow: var(--shadow-sm), var(--shadow-inset);
     position: relative;
     overflow: hidden;
+    text-align: left;
   }
 
   /* Inner light edge */

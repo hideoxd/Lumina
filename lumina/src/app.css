@@ -22,10 +22,10 @@
   --glass-noise-opacity: 0.03;
   --glass-saturation: 1.6;
 
-  /* Accent — Electric Violet (user-customizable) */
-  --accent-h: 270;
-  --accent-s: 95%;
-  --accent-l: 65%;
+  /* Accent — Aurora Blue (user-customizable) */
+  --accent-h: 210;
+  --accent-s: 90%;
+  --accent-l: 60%;
   --accent-primary: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
   --accent-secondary: hsl(calc(var(--accent-h) + 50), 90%, 60%);
   --accent-glow: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
@@ -70,12 +70,12 @@
   --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --animation-speed-multiplier: 1;
   --duration-instant: 80ms;
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --duration-slow: 400ms;
   --duration-slower: 600ms;
-  --animation-speed-multiplier: 1;
 
   /* Border Radius */
   --radius-xs: 4px;
@@ -99,7 +99,7 @@
   --space-16: 64px;
 
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Sora', 'SF Pro Display', 'Segoe UI Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
 
   --text-xs: 0.6875rem;    /* 11px */

@@ -11,11 +11,11 @@ const STORAGE_KEY = 'lumina.theme.active';
 /** Default dark theme */
 const defaultDarkTheme: ThemePreset = {
   id: 'default-dark',
-  name: 'Midnight Violet',
+  name: 'Aurora Blue',
   mode: 'dark',
-  accentHue: 270,
-  accentSaturation: 95,
-  accentLightness: 65,
+  accentHue: 210,
+  accentSaturation: 90,
+  accentLightness: 60,
   glassBlur: 24,
   glassOpacity: 0.45,
   noiseOpacity: 0.03,
@@ -26,11 +26,11 @@ const defaultDarkTheme: ThemePreset = {
 /** Default light theme */
 const defaultLightTheme: ThemePreset = {
   id: 'default-light',
-  name: 'Crystal Dawn',
+  name: 'Crystal Sky',
   mode: 'light',
-  accentHue: 270,
-  accentSaturation: 85,
-  accentLightness: 55,
+  accentHue: 210,
+  accentSaturation: 82,
+  accentLightness: 54,
   glassBlur: 20,
   glassOpacity: 0.65,
   noiseOpacity: 0.02,
@@ -140,8 +140,15 @@ export function applyTheme(theme: ThemePreset) {
     root.style.setProperty('--glass-bg-active', `hsla(225, 20%, 95%, ${activeAlpha})`);
   }
 
-  // Animation speed
+  // Animation speed (scale durations)
   root.style.setProperty('--animation-speed-multiplier', String(theme.animationSpeed));
+  const speed = Math.max(0.5, Math.min(2, theme.animationSpeed));
+  const dur = (ms: number) => Math.round(ms * speed);
+  root.style.setProperty('--duration-instant', `${dur(80)}ms`);
+  root.style.setProperty('--duration-fast', `${dur(150)}ms`);
+  root.style.setProperty('--duration-normal', `${dur(250)}ms`);
+  root.style.setProperty('--duration-slow', `${dur(400)}ms`);
+  root.style.setProperty('--duration-slower', `${dur(600)}ms`);
 
   activeTheme.set(theme);
 
@@ -153,7 +160,11 @@ export function applyTheme(theme: ThemePreset) {
 export function loadThemeFromStorage(): ThemePreset {
   const stored = readJson<ThemePreset>(STORAGE_KEY);
   if (!stored) return defaultDarkTheme;
-  return stored;
+  return {
+    ...defaultDarkTheme,
+    ...stored,
+    mode: stored.mode ?? defaultDarkTheme.mode,
+  };
 }
 
 /** Set accent hue */
@@ -210,7 +221,7 @@ export function applyPreset(preset: ThemePreset) {
 /** Toggle dark/light mode */
 export function toggleMode() {
   activeTheme.update((t) => {
-    const newMode = t.mode === 'dark' ? 'light' : 'dark';
+    const newMode: ThemePreset['mode'] = t.mode === 'dark' ? 'light' : 'dark';
     const updated = { ...t, mode: newMode };
     applyTheme(updated);
     return updated;

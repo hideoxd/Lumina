@@ -31,17 +31,18 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    if (!$nowPlayingFullscreen) return;
     if (e.key === 'Escape') close();
   }
 </script>
 
-{#if $nowPlayingFullscreen}
-  <svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} />
 
+{#if $nowPlayingFullscreen}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="overlay" onclick={close}>
+  <div class="overlay" onclick={close} onkeydown={(e) => { if (e.key === 'Escape') close(); }} role="presentation">
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="sheet" onclick={(e) => e.stopPropagation()}>
+    <div class="sheet" onclick={(e) => e.stopPropagation()} role="presentation">
       <div class="bg" aria-hidden="true"></div>
 
       <div class="topbar">
@@ -276,11 +277,6 @@
     color: var(--text-tertiary);
   }
 
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
 
   .btns {
     display: flex;

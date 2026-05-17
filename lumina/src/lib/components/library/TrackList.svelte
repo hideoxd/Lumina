@@ -72,12 +72,15 @@
     bind:this={viewportEl}
     onscroll={handleScroll}
     onmouseenter={handleResize}
+    role="region"
+    aria-label="Track list"
   >
     <div class="spacer" style="height: {totalHeight}px">
       <div class="slice" style="transform: translateY({offsetTop}px)">
         {#each tracks.slice(startIndex, endIndex) as track, localIndex (track.id)}
           {@const index = startIndex + localIndex}
-          <div
+          <button
+            type="button"
             class="row"
             style="height: {rowHeight}px"
             title="Double click to play"
@@ -112,13 +115,22 @@
             <div class="cell cell-artist truncate">{track.artist}</div>
             <div class="cell cell-album truncate">{track.album}</div>
             <div class="cell cell-fav">
-              <button
+              <span
                 class="fav"
                 class:active={track.favorite}
+                role="button"
+                tabindex="0"
                 title={track.favorite ? 'Remove from favorites' : 'Add to favorites'}
                 onclick={(e) => {
                   e.stopPropagation();
                   void toggleFavorite(track);
+                }}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void toggleFavorite(track);
+                  }
                 }}
               >
                 <Icon
@@ -126,10 +138,10 @@
                   size={14}
                   color={track.favorite ? 'var(--accent-primary)' : 'var(--text-tertiary)'}
                 />
-              </button>
+              </span>
             </div>
             <div class="cell cell-time">{Math.floor(track.duration / 60)}:{String(Math.floor(track.duration % 60)).padStart(2, '0')}</div>
-          </div>
+          </button>
         {/each}
       </div>
     </div>

@@ -5,17 +5,23 @@
   import GlassCard from '$lib/components/glass/GlassCard.svelte';
   import GlassButton from '$lib/components/glass/GlassButton.svelte';
   import Icon from '$lib/components/Icon.svelte';
-  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery } from '$lib/stores/ui';
+  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen } from '$lib/stores/ui';
   import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks } from '$lib/stores/library';
   import TrackList from '$lib/components/library/TrackList.svelte';
   import AlbumGrid from '$lib/components/library/AlbumGrid.svelte';
   import ArtistGrid from '$lib/components/library/ArtistGrid.svelte';
+  import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte';
+  import { playlists, selectedPlaylist, playlistTracks, selectPlaylist, refreshPlaylists } from '$lib/stores/playlists';
+  import { deletePlaylist } from '$lib/commands/library';
   import SettingsModal from '$lib/components/overlays/SettingsModal.svelte';
   import NowPlaying from '$lib/components/overlays/NowPlaying.svelte';
   import QueuePanel from '$lib/components/overlays/QueuePanel.svelte';
   import { onMount } from 'svelte';
   import { addMusicFolderWithDialog, initLibraryListeners, refreshTracks } from '$lib/controllers/library';
-  import { playQueueIndex, setQueue } from '$lib/stores/queue';
+  import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback } from '$lib/stores/queue';
+  import { currentTrack, isPlaying, volume, formatTime } from '$lib/stores/player';
+  import { getArtworkUrl } from '$lib/utils/artwork';
+  import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
   import type { Track } from '$lib/types';
 
   // Reactive sidebar width for grid
@@ -28,6 +34,7 @@
   onMount(() => {
     void initLibraryListeners();
     void refreshTracks();
+    void refreshPlaylists();
   });
 
   async function handleAddMusic() {
@@ -51,16 +58,94 @@
 
   let visibleFavorites = $derived($visibleTracks.filter((t) => t.favorite));
 
-  let recentTracks = $derived(() => {
-    const q = $searchQuery.trim().toLowerCase();
-    let list = $allTracks.filter((t) => !!t.last_played);
-    if (q) {
-      list = list.filter((t) => `${t.title} ${t.artist} ${t.album} ${t.genre}`.toLowerCase().includes(q));
+  let miniArtworkUrl = $state('');
+
+  async function exitMiniPlayer() {
+    miniPlayerMode.set(false);
+    try {
+      const win = getCurrentWindow();
+      await win.setAlwaysOnTop(false);
+      await win.setSize(new LogicalSize(1280, 800));
+      await win.center();
+    } catch {}
+  }
+
+  $effect(() => {
+    if ($currentTrack?.artwork_path) {
+      getArtworkUrl($currentTrack.artwork_path).then(url => { miniArtworkUrl = url; });
+    } else {
+      miniArtworkUrl = '';
     }
-    return [...list].sort((a, b) => (b.last_played || '').localeCompare(a.last_played || ''));
   });
+
+  async function handlePlayPlaylist(list: Track[], index: number) {
+    await handlePlayFromCustomList(list, index);
+  }
+
+  async function handleDeleteCurrentPlaylist() {
+    const pl = $selectedPlaylist;
+    if (!pl) return;
+    try {
+      await deletePlaylist(pl.id);
+      selectPlaylist(null);
+      await refreshPlaylists();
+    } catch (e) {
+      console.error('Failed to delete playlist', e);
+    }
+  }
+
+  async function handleSelectPlaylist(pl: import('$lib/types').Playlist) {
+    selectPlaylist(pl);
+  }
+
+  let recentTracks = $derived(
+    (() => {
+      const q = $searchQuery.trim().toLowerCase();
+      let list = $allTracks.filter((t) => !!t.last_played);
+      if (q) {
+        list = list.filter((t) => `${t.title} ${t.artist} ${t.album} ${t.album_artist ?? ''} ${t.genre ?? ''}`.toLowerCase().includes(q));
+      }
+      return [...list].sort((a, b) => (b.last_played || '').localeCompare(a.last_played || ''));
+    })()
+  );
 </script>
 
+{#if $miniPlayerMode}
+  <!-- Mini Player Mode -->
+  <div class="mini-player">
+    <div class="mini-art">
+      {#if miniArtworkUrl}
+        <img src={miniArtworkUrl} alt="" />
+      {:else}
+        <div class="mini-art-placeholder">
+          <Icon name="music" size={24} color="var(--accent-primary)" />
+        </div>
+      {/if}
+    </div>
+    <div class="mini-info">
+      {#if $currentTrack}
+        <div class="mini-title truncate">{$currentTrack.title}</div>
+        <div class="mini-artist truncate">{$currentTrack.artist}</div>
+      {:else}
+        <div class="mini-title text-tertiary">No track playing</div>
+      {/if}
+    </div>
+    <div class="mini-controls">
+      <button class="mini-btn" onclick={() => playPrevious()} title="Previous">
+        <Icon name="skip-back" size={18} />
+      </button>
+      <button class="mini-btn mini-play" onclick={() => togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
+        <Icon name={$isPlaying ? 'pause' : 'play'} size={20} />
+      </button>
+      <button class="mini-btn" onclick={() => playNext()} title="Next">
+        <Icon name="skip-forward" size={18} />
+      </button>
+    </div>
+    <button class="mini-exit" onclick={exitMiniPlayer} title="Exit mini player">
+      <Icon name="maximize" size={14} />
+    </button>
+  </div>
+{:else}
 <div
   class="app-container"
   style="grid-template-columns: {gridColumns};"
@@ -207,14 +292,58 @@
         </div>
 
       {:else if $currentView === 'playlists'}
-        <div class="view-header animate-fade-in-up">
-          <h1 class="view-title">Playlists</h1>
-        </div>
-        <div class="placeholder-view animate-fade-in-up delay-1">
-          <GlassCard padding="lg">
-            <p class="text-secondary">Playlist manager — coming in Phase 5</p>
-          </GlassCard>
-        </div>
+        {#if $selectedPlaylist}
+          <!-- Playlist detail view -->
+          <div class="view-header animate-fade-in-up">
+            <div class="view-title-section">
+              <button class="back-btn" onclick={() => selectPlaylist(null)} title="Back to all playlists">
+                <Icon name="chevron-left" size={18} />
+              </button>
+              <h1 class="view-title">{$selectedPlaylist.name}</h1>
+              <span class="view-count">{$playlistTracks.length} tracks</span>
+            </div>
+            <div class="view-actions">
+              <GlassButton variant="ghost" size="sm" onclick={handleDeleteCurrentPlaylist}>
+                <Icon name="x" size={14} />
+                <span>Delete</span>
+              </GlassButton>
+            </div>
+          </div>
+          {#if $playlistTracks.length === 0}
+            <div class="placeholder-view animate-fade-in-up delay-1">
+              <GlassCard padding="lg" radius="2xl">
+                <p class="text-secondary">This playlist is empty. Add tracks from your library.</p>
+              </GlassCard>
+            </div>
+          {:else}
+            <div class="tracks-list animate-fade-in-up delay-1">
+              <GlassCard padding="md" radius="2xl" class="tracks-card">
+                <TrackList
+                  tracks={$playlistTracks}
+                  onPlay={(t, i) => void handlePlayPlaylist($playlistTracks, i)}
+                />
+              </GlassCard>
+            </div>
+          {/if}
+        {:else}
+          <div class="view-header animate-fade-in-up">
+            <div class="view-title-section">
+              <h1 class="view-title">Playlists</h1>
+              <span class="view-count">{$playlists.length} playlists</span>
+            </div>
+          </div>
+          {#if $playlists.length === 0}
+            <div class="placeholder-view animate-fade-in-up delay-1">
+              <GlassCard padding="lg" radius="2xl">
+                <p class="text-secondary">No playlists yet. Click + in the sidebar to create one.</p>
+              </GlassCard>
+            </div>
+          {:else}
+            <div class="animate-fade-in-up delay-1">
+              <PlaylistGrid playlists={$playlists} onSelect={handleSelectPlaylist} />
+            </div>
+          {/if}
+        {/if}
 
       {:else if $currentView === 'favorites'}
         <div class="view-header animate-fade-in-up">
@@ -272,6 +401,7 @@
     <PlayerBar />
   </div>
 </div>
+{/if}
 
 <!-- Overlays -->
 <SettingsModal />
@@ -443,7 +573,7 @@
     min-height: 420px;
   }
 
-  .tracks-card {
+  :global(.tracks-card) {
     height: 100%;
   }
 
@@ -567,5 +697,132 @@
   /* Placeholder views */
   .placeholder-view {
     max-width: 400px;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out-quart);
+    flex-shrink: 0;
+  }
+
+  .back-btn:hover {
+    background: var(--glass-bg-hover);
+    color: var(--text-primary);
+  }
+
+  /* ---- Mini Player ---- */
+  .mini-player {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: 100vh;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .mini-art {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mini-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mini-art-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-gradient-subtle);
+  }
+
+  .mini-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mini-title {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1px;
+  }
+
+  .mini-artist {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+
+  .mini-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .mini-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out-quart), color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .mini-btn:hover {
+    background: hsla(0, 0%, 100%, 0.06);
+    color: var(--text-primary);
+  }
+
+  .mini-play {
+    background: var(--accent-gradient);
+    color: white;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .mini-play:hover {
+    box-shadow: var(--shadow-glow-lg);
+  }
+
+  .mini-exit {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out-quart), color var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .mini-exit:hover {
+    background: var(--glass-bg-hover);
+    color: var(--text-primary);
   }
 </style>

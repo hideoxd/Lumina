@@ -25,7 +25,7 @@
 
   function getAlbumTracks(album: Album): Track[] {
     const key = album.id;
-    const list = tracks.filter((t) => `${t.album}::${t.album_artist || t.artist}` === key);
+    const list = tracks.filter((t) => `${t.album}::${t.album_artist ?? t.artist}` === key);
     return [...list].sort((a, b) => {
       const d = (a.disc_number ?? 0) - (b.disc_number ?? 0);
       if (d !== 0) return d;
@@ -35,11 +35,13 @@
     });
   }
 
-  let filtered = $derived(() => {
-    const q = $searchQuery.trim().toLowerCase();
-    if (!q) return albums;
-    return albums.filter((a) => `${a.title} ${a.artist}`.toLowerCase().includes(q));
-  });
+  let filtered = $derived(
+    (() => {
+      const q = $searchQuery.trim().toLowerCase();
+      if (!q) return albums;
+      return albums.filter((a) => `${a.title} ${a.artist}`.toLowerCase().includes(q));
+    })()
+  );
 </script>
 
 <div class="grid">
@@ -95,7 +97,7 @@
     gap: var(--space-4);
   }
 
-  .album {
+  :global(.album) {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
@@ -105,7 +107,7 @@
       box-shadow var(--duration-normal) ease;
   }
 
-  .album:hover {
+  :global(.album:hover) {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg), var(--shadow-glow);
   }

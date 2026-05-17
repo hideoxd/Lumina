@@ -55,6 +55,9 @@ export function toggleQueue() {
   queuePanelOpen.update((v) => !v);
 }
 
+/** Active playlist ID (when viewing a specific playlist) */
+export const activePlaylistId = writable<string | null>(null);
+
 /** Navigate to view */
 export function navigateTo(view: ViewMode) {
   currentView.set(view);

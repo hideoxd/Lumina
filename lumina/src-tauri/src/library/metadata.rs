@@ -18,8 +18,14 @@ pub fn extract_metadata(
         .read()
         .map_err(|e| e.to_string())?;
 
-    let tag = tagged_file.primary_tag_mut().or_else(|| tagged_file.first_tag_mut());
-    let properties = tagged_file.properties();
+    let duration = tagged_file.properties().duration().as_secs_f64();
+    let bitrate = tagged_file.properties().audio_bitrate().map(|b| b as i32);
+    let sample_rate = tagged_file.properties().sample_rate().map(|s| s as i32);
+
+    let tag = match tagged_file.primary_tag_mut() {
+        Some(t) => Some(t),
+        None => tagged_file.first_tag_mut(),
+    };
 
     let mut title = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
     let mut artist = "Unknown Artist".to_string();
@@ -36,11 +42,15 @@ pub fn extract_metadata(
         if let Some(val) = t.artist() { artist = val.into_owned(); }
         if let Some(val) = t.album() { album = val.into_owned(); }
         
-        album_artist = t.get_string(&ItemKey::AlbumArtist).map(|s: &str| s.to_string());
-        genre = t.get_string(&ItemKey::Genre).map(|s: &str| s.to_string());
-        year = t.get_string(&ItemKey::Year).and_then(|s: &str| s.parse::<i32>().ok());
-        track_number = t.get_string(&ItemKey::TrackNumber).and_then(|s: &str| s.parse::<i32>().ok());
-        disc_number = t.get_string(&ItemKey::DiscNumber).and_then(|s: &str| s.parse::<i32>().ok());
+        album_artist = t.get_string(ItemKey::AlbumArtist).map(|s: &str| s.to_string());
+        genre = t.get_string(ItemKey::Genre).map(|s: &str| s.to_string());
+        year = t.get_string(ItemKey::Year).and_then(|s: &str| s.parse::<i32>().ok());
+        track_number = t
+            .get_string(ItemKey::TrackNumber)
+            .and_then(|s: &str| s.parse::<i32>().ok());
+        disc_number = t
+            .get_string(ItemKey::DiscNumber)
+            .and_then(|s: &str| s.parse::<i32>().ok());
 
         // Extract artwork
         if let Some(pic) = t.pictures().first() {
@@ -51,9 +61,6 @@ pub fn extract_metadata(
     }
 
     let file_metadata = fs::metadata(path).map_err(|e| e.to_string())?;
-    let duration = properties.duration().as_secs_f64();
-    let bitrate = properties.audio_bitrate().map(|b| b as i32);
-    let sample_rate = properties.sample_rate().map(|s| s as i32);
     let file_format = path.extension().unwrap_or_default().to_string_lossy().to_lowercase();
     let file_path = path.to_string_lossy().to_string();
     let id = Uuid::new_v5(&Uuid::NAMESPACE_URL, file_path.as_bytes()).to_string();

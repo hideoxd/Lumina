@@ -8,8 +8,8 @@ export interface Track {
   title: string;
   artist: string;
   album: string;
-  album_artist: string;
-  genre: string;
+  album_artist: string | null;
+  genre: string | null;
   year: number | null;
   track_number: number | null;
   disc_number: number | null;

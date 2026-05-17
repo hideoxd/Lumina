@@ -41,22 +41,41 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    if (!open) return;
     if (e.key === 'Escape') close();
+  }
+
+  function handleBackdropClick(e: MouseEvent) {
+    if (e.target !== e.currentTarget) return;
+    close();
+  }
+
+  function handleBackdropKeydown(e: KeyboardEvent) {
+    if (!open) return;
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      close();
+    }
   }
 </script>
 
-{#if open}
-  <svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} />
 
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="backdrop" onclick={close}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+{#if open}
+  <div
+    class="backdrop"
+    role="button"
+    tabindex="0"
+    aria-label="Close dialog"
+    onclick={handleBackdropClick}
+    onkeydown={handleBackdropKeydown}
+  >
     <div
       class="dialog"
       role="dialog"
       aria-modal="true"
       aria-label={title || 'Dialog'}
-      onclick={(e) => e.stopPropagation()}
+      tabindex="-1"
       style="max-width: {widthMap[size]}"
     >
       <GlassCard padding="lg" radius="2xl" class="modal-surface" accent>
@@ -116,7 +135,7 @@
     animation: fadeInScale var(--duration-slow) var(--ease-out-expo) both;
   }
 
-  .modal-surface {
+  :global(.modal-surface) {
     max-height: inherit;
     display: flex;
     flex-direction: column;

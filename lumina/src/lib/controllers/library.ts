@@ -1,7 +1,7 @@
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 
-import { getAllTracks, scanDirectory } from '$lib/commands/library';
+import { getAllTracks, scanDirectory, watchDirectory } from '$lib/commands/library';
 import { libraryLoading, scanProgress, tracks } from '$lib/stores/library';
 
 import type { ScanProgress, Track } from '$lib/types';
@@ -49,14 +49,14 @@ export async function addMusicFolderWithDialog(): Promise<string | null> {
 
   try {
     await scanDirectory(selection);
+    // Start watching for file changes
+    void watchDirectory(selection).catch(() => {});
   } catch {
     libraryLoading.set(false);
     scanProgress.set(null);
     throw new Error('Scan failed');
   }
 
-  // scanDirectory returns when the backend finishes (it awaits spawn_blocking),
-  // but we still keep the event-driven completion as the source of truth.
   return selection;
 }
 

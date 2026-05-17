@@ -1,4 +1,3 @@
-use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use tauri::{AppHandle, Manager, Emitter};
 use rayon::prelude::*;

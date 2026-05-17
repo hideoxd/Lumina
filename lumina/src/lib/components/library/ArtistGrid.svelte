@@ -34,11 +34,13 @@
     });
   }
 
-  let filtered = $derived(() => {
-    const q = $searchQuery.trim().toLowerCase();
-    if (!q) return artists;
-    return artists.filter((a) => a.name.toLowerCase().includes(q));
-  });
+  let filtered = $derived(
+    (() => {
+      const q = $searchQuery.trim().toLowerCase();
+      if (!q) return artists;
+      return artists.filter((a) => a.name.toLowerCase().includes(q));
+    })()
+  );
 </script>
 
 <div class="grid">
@@ -96,14 +98,14 @@
     gap: var(--space-4);
   }
 
-  .artist {
+  :global(.artist) {
     cursor: default;
     transition:
       transform var(--duration-normal) var(--ease-out-quart),
       box-shadow var(--duration-normal) ease;
   }
 
-  .artist:hover {
+  :global(.artist:hover) {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg), var(--shadow-glow);
   }

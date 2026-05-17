@@ -9,13 +9,30 @@
   function close() {
     queuePanelOpen.set(false);
   }
+
+  function handleBackdropClick(e: MouseEvent) {
+    if (e.target !== e.currentTarget) return;
+    close();
+  }
+
+  function handleBackdropKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      close();
+    }
+  }
 </script>
 
 {#if $queuePanelOpen}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="backdrop" onclick={close}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <aside class="panel" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="backdrop"
+    role="button"
+    tabindex="0"
+    aria-label="Close queue"
+    onclick={handleBackdropClick}
+    onkeydown={handleBackdropKeydown}
+  >
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Queue">
       <GlassCard padding="lg" radius="2xl" class="surface">
         <div class="header">
           <div class="title">
@@ -40,7 +57,6 @@
               <button
                 class="item"
                 class:active={i === $queueState.currentIndex}
-                role="listitem"
                 onclick={() => void playQueueIndex(i)}
                 title="Play"
               >
@@ -52,7 +68,7 @@
           {/if}
         </div>
       </GlassCard>
-    </aside>
+      </div>
   </div>
 {/if}
 
@@ -77,7 +93,7 @@
     animation: slideInRight var(--duration-slow) var(--ease-out-expo) both;
   }
 
-  .surface {
+  :global(.surface) {
     height: 100%;
     display: flex;
     flex-direction: column;

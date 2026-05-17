@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Track } from '../types';
+import type { Track, Playlist } from '../types';
 
 export async function scanDirectory(path: string): Promise<void> {
   return invoke('scan_directory', { path });
@@ -23,4 +23,52 @@ export async function getFavoriteTracks(): Promise<Track[]> {
 
 export async function getRecentTracks(limit?: number): Promise<Track[]> {
   return invoke('get_recent_tracks', { limit });
+}
+
+export async function searchTracks(query: string): Promise<Track[]> {
+  return invoke('search_tracks', { query });
+}
+
+// ── Playlists ──
+
+export async function createPlaylist(name: string, description?: string): Promise<Playlist> {
+  return invoke('create_playlist', { name, description });
+}
+
+export async function getAllPlaylists(): Promise<Playlist[]> {
+  return invoke('get_all_playlists');
+}
+
+export async function getPlaylist(playlistId: string): Promise<Playlist | null> {
+  return invoke('get_playlist', { playlist_id: playlistId });
+}
+
+export async function renamePlaylist(playlistId: string, name: string): Promise<void> {
+  return invoke('rename_playlist', { playlist_id: playlistId, name });
+}
+
+export async function deletePlaylist(playlistId: string): Promise<void> {
+  return invoke('delete_playlist', { playlist_id: playlistId });
+}
+
+export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
+  return invoke('get_playlist_tracks', { playlist_id: playlistId });
+}
+
+export async function addTrackToPlaylist(playlistId: string, trackId: string): Promise<void> {
+  return invoke('add_track_to_playlist', { playlist_id: playlistId, track_id: trackId });
+}
+
+export async function removeTrackFromPlaylist(playlistId: string, trackId: string): Promise<void> {
+  return invoke('remove_track_from_playlist', { playlist_id: playlistId, track_id: trackId });
+}
+
+// ── Folder Watch ──
+
+export async function watchDirectory(path: string): Promise<void> {
+  return invoke('watch_directory', { path });
+}
+
+export async function unwatchDirectory(path: string): Promise<void> {
+  return invoke('unwatch_directory', { path });
 }
