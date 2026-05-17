@@ -17,6 +17,26 @@ export async function markTrackPlayed(trackId: string): Promise<void> {
   return invoke('mark_track_played', { track_id: trackId });
 }
 
+export async function updateTrackMetadata(
+  trackId: string,
+  fields: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    album_artist?: string;
+    genre?: string;
+    year?: string;
+    track_number?: string;
+    disc_number?: string;
+    composer?: string;
+    publisher?: string;
+    comments?: string;
+    artwork_path?: string;
+  },
+): Promise<void> {
+  return invoke('edit_track_metadata', { track_id: trackId, ...fields });
+}
+
 export async function getFavoriteTracks(): Promise<Track[]> {
   return invoke('get_favorite_tracks');
 }

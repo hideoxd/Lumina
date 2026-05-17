@@ -72,6 +72,7 @@ pub fn run() {
             library::scan_directory,
             library::get_all_tracks,
             library::set_track_favorite,
+            library::edit_track_metadata,
             library::mark_track_played,
             library::get_favorite_tracks,
             library::get_recent_tracks,

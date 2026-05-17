@@ -212,10 +212,14 @@ input, textarea, [contenteditable] {
   background: hsla(0, 0%, 100%, 0.12);
   border-radius: var(--radius-full);
   transition: background var(--duration-fast) ease;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsla(0, 0%, 100%, 0.22);
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-corner {
@@ -644,7 +648,6 @@ button, a, [role="button"] {
 .app-container {
   display: grid;
   grid-template-rows: var(--titlebar-height) 1fr var(--player-bar-height);
-  grid-template-columns: var(--sidebar-width) 1fr;
   grid-template-areas:
     "titlebar titlebar"
     "sidebar  content"
@@ -670,6 +673,9 @@ button, a, [role="button"] {
   grid-area: content;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .app-player {

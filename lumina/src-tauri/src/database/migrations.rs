@@ -19,6 +19,9 @@ pub fn apply_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
             file_size INTEGER NOT NULL,
             bitrate INTEGER,
             sample_rate INTEGER,
+            composer TEXT,
+            publisher TEXT,
+            comments TEXT,
             artwork_path TEXT,
             date_added TEXT NOT NULL,
             last_played TEXT,
@@ -27,6 +30,11 @@ pub fn apply_migrations(conn: &Connection) -> Result<(), rusqlite::Error> {
         )",
         [],
     )?;
+
+    // Add new columns for existing databases (safe if already exist)
+    let _ = conn.execute("ALTER TABLE tracks ADD COLUMN composer TEXT", []);
+    let _ = conn.execute("ALTER TABLE tracks ADD COLUMN publisher TEXT", []);
+    let _ = conn.execute("ALTER TABLE tracks ADD COLUMN comments TEXT", []);
 
     // Create FTS5 virtual table for fast full-text search
     conn.execute(

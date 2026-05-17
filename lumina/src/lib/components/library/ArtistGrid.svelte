@@ -101,6 +101,7 @@
 
   :global(.artist) {
     cursor: default;
+    min-width: 0;
     transition:
       transform var(--duration-normal) var(--ease-out-quart),
       box-shadow var(--duration-normal) ease;

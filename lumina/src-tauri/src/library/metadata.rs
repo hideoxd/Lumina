@@ -35,6 +35,9 @@ pub fn extract_metadata(
     let mut year = None;
     let mut track_number = None;
     let mut disc_number = None;
+    let mut composer = None;
+    let mut publisher = None;
+    let mut comments = None;
     let mut artwork_path = None;
 
     if let Some(t) = tag {
@@ -51,6 +54,9 @@ pub fn extract_metadata(
         disc_number = t
             .get_string(ItemKey::DiscNumber)
             .and_then(|s: &str| s.parse::<i32>().ok());
+        composer = t.get_string(ItemKey::Composer).map(|s: &str| s.to_string());
+        publisher = t.get_string(ItemKey::Publisher).map(|s: &str| s.to_string());
+        comments = t.get_string(ItemKey::Comment).map(|s: &str| s.to_string());
 
         // Extract artwork
         if let Some(pic) = t.pictures().first() {
@@ -81,6 +87,9 @@ pub fn extract_metadata(
         file_size: file_metadata.len() as i64,
         bitrate,
         sample_rate,
+        composer,
+        publisher,
+        comments,
         artwork_path,
         date_added: Utc::now().to_rfc3339(),
         last_played: None,

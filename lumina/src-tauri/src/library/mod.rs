@@ -35,6 +35,46 @@ pub fn mark_track_played(db: State<'_, DbState>, track_id: String) -> Result<(),
 }
 
 #[command]
+pub fn edit_track_metadata(
+    db: State<'_, DbState>,
+    track_id: String,
+    title: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+    album_artist: Option<String>,
+    genre: Option<String>,
+    year: Option<String>,
+    track_number: Option<String>,
+    disc_number: Option<String>,
+    composer: Option<String>,
+    publisher: Option<String>,
+    comments: Option<String>,
+    artwork_path: Option<String>,
+) -> Result<(), String> {
+    let conn = db.conn.lock().map_err(|_| "Failed to lock db".to_string())?;
+    let year_i32 = year.as_deref().and_then(|y| y.parse::<i32>().ok());
+    let track_number_i32 = track_number.as_deref().and_then(|n| n.parse::<i32>().ok());
+    let disc_number_i32 = disc_number.as_deref().and_then(|n| n.parse::<i32>().ok());
+    queries::update_track_metadata(
+        &conn,
+        &track_id,
+        title.as_deref(),
+        artist.as_deref(),
+        album.as_deref(),
+        album_artist.as_deref(),
+        genre.as_deref(),
+        year_i32,
+        track_number_i32,
+        disc_number_i32,
+        composer.as_deref(),
+        publisher.as_deref(),
+        comments.as_deref(),
+        artwork_path.as_deref(),
+    )
+    .map_err(|e| e.to_string())
+}
+
+#[command]
 pub fn get_favorite_tracks(db: State<'_, DbState>) -> Result<Vec<Track>, String> {
     let conn = db.conn.lock().map_err(|_| "Failed to lock db".to_string())?;
     queries::get_favorite_tracks(&conn).map_err(|e| e.to_string())

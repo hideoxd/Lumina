@@ -19,6 +19,9 @@ export interface Track {
   file_size: number; // bytes
   bitrate: number | null;
   sample_rate: number | null;
+  composer: string | null;
+  publisher: string | null;
+  comments: string | null;
   artwork_path: string | null;
   date_added: string; // ISO date
   last_played: string | null;

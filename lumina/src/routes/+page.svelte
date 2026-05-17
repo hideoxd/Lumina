@@ -5,7 +5,7 @@
   import GlassCard from '$lib/components/glass/GlassCard.svelte';
   import GlassButton from '$lib/components/glass/GlassButton.svelte';
   import Icon from '$lib/components/Icon.svelte';
-  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen } from '$lib/stores/ui';
+  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen, lastWindowSize, queuePanelOpen } from '$lib/stores/ui';
   import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks } from '$lib/stores/library';
   import TrackList from '$lib/components/library/TrackList.svelte';
   import AlbumGrid from '$lib/components/library/AlbumGrid.svelte';
@@ -18,7 +18,7 @@
   import QueuePanel from '$lib/components/overlays/QueuePanel.svelte';
   import { onMount } from 'svelte';
   import { addMusicFolderWithDialog, initLibraryListeners, refreshTracks } from '$lib/controllers/library';
-  import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback } from '$lib/stores/queue';
+  import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback, queueState } from '$lib/stores/queue';
   import { currentTrack, isPlaying, volume, formatTime } from '$lib/stores/player';
   import { getArtworkUrl } from '$lib/utils/artwork';
   import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
@@ -31,7 +31,12 @@
       : 'var(--sidebar-width) 1fr'
   );
 
-  onMount(() => {
+  onMount(async () => {
+    try {
+      const win = getCurrentWindow();
+      const size = await win.innerSize();
+      lastWindowSize.set({ width: size.width, height: size.height });
+    } catch {}
     void initLibraryListeners();
     void refreshTracks();
     void refreshPlaylists();
@@ -65,16 +70,20 @@
     try {
       const win = getCurrentWindow();
       await win.setAlwaysOnTop(false);
-      await win.setSize(new LogicalSize(1280, 800));
+      await win.setSize(new LogicalSize($lastWindowSize.width, $lastWindowSize.height));
       await win.center();
     } catch {}
   }
 
   $effect(() => {
-    if ($currentTrack?.artwork_path) {
-      getArtworkUrl($currentTrack.artwork_path).then(url => { miniArtworkUrl = url; });
-    } else {
-      miniArtworkUrl = '';
+    const art = $currentTrack?.artwork_path;
+    if (!art) { miniArtworkUrl = ''; return; }
+    getArtworkUrl(art).then(url => { miniArtworkUrl = url; }).catch(() => { miniArtworkUrl = ''; });
+  });
+
+  $effect(() => {
+    if ($miniPlayerMode) {
+      queuePanelOpen.set(false);
     }
   });
 
@@ -112,33 +121,34 @@
 
 {#if $miniPlayerMode}
   <!-- Mini Player Mode -->
-  <div class="mini-player">
+  <div class="mini-player" data-tauri-drag-region>
     <div class="mini-art">
       {#if miniArtworkUrl}
         <img src={miniArtworkUrl} alt="" />
       {:else}
         <div class="mini-art-placeholder">
-          <Icon name="music" size={24} color="var(--accent-primary)" />
+          <Icon name="music" size={22} color="var(--accent-primary)" />
         </div>
       {/if}
     </div>
-    <div class="mini-info">
+    <div class="mini-info" data-tauri-drag-region>
       {#if $currentTrack}
         <div class="mini-title truncate">{$currentTrack.title}</div>
         <div class="mini-artist truncate">{$currentTrack.artist}</div>
       {:else}
         <div class="mini-title text-tertiary">No track playing</div>
+        <div class="mini-artist truncate">—</div>
       {/if}
     </div>
     <div class="mini-controls">
-      <button class="mini-btn" onclick={() => playPrevious()} title="Previous">
-        <Icon name="skip-back" size={18} />
+      <button class="mini-btn" onclick={() => void playPrevious()} title="Previous">
+        <Icon name="skip-back" size={16} />
       </button>
-      <button class="mini-btn mini-play" onclick={() => togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
-        <Icon name={$isPlaying ? 'pause' : 'play'} size={20} />
+      <button class="mini-btn mini-play" onclick={() => void togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
+        <Icon name={$isPlaying ? 'pause' : 'play'} size={18} />
       </button>
-      <button class="mini-btn" onclick={() => playNext()} title="Next">
-        <Icon name="skip-forward" size={18} />
+      <button class="mini-btn" onclick={() => void playNext()} title="Next">
+        <Icon name="skip-forward" size={16} />
       </button>
     </div>
     <button class="mini-exit" onclick={exitMiniPlayer} title="Exit mini player">
@@ -463,15 +473,23 @@
   }
 
   .app-content {
-    position: relative;
+    grid-area: content;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   /* Content inner */
   .content-inner {
     padding: var(--space-6);
-    min-height: 100%;
+    flex: 1;
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   /* View header */
@@ -576,8 +594,8 @@
 
   /* Track list wrapper */
   .tracks-list {
-    height: calc(100vh - var(--titlebar-height) - var(--player-bar-height) - 160px);
-    min-height: 420px;
+    flex: 1;
+    min-height: 0;
   }
 
   :global(.tracks-card) {
@@ -588,7 +606,7 @@
   .empty-state {
     max-width: 560px;
     margin: var(--space-16) auto 0;
-    animation: bounceIn 0.8s var(--ease-out-back) both;
+    animation: fadeInUp 0.6s var(--ease-out-expo) both;
   }
 
   .empty-content {
@@ -607,7 +625,6 @@
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-8);
-    animation: breathe 3s ease-in-out infinite;
   }
 
   .empty-icon {
@@ -621,7 +638,7 @@
     justify-content: center;
     background: var(--accent-gradient-subtle);
     border: 1px solid hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15);
-    animation: bounceIn 0.6s var(--ease-out-back) both;
+    animation: fadeIn 0.6s var(--ease-out-quart) both;
     animation-delay: 0.2s;
   }
 
@@ -634,22 +651,27 @@
   .ring-1 {
     width: 100px;
     height: 100px;
-    animation: breathe 4s ease-in-out infinite;
+    animation: pulse-ring 4s ease-in-out infinite;
     animation-delay: 0s;
   }
 
   .ring-2 {
     width: 120px;
     height: 120px;
-    animation: breathe 4s ease-in-out infinite;
+    animation: pulse-ring 4s ease-in-out infinite;
     animation-delay: 0.5s;
   }
 
   .ring-3 {
     width: 140px;
     height: 140px;
-    animation: breathe 4s ease-in-out infinite;
+    animation: pulse-ring 4s ease-in-out infinite;
     animation-delay: 1s;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 0.4; border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.06); }
+    50% { opacity: 1; border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15); }
   }
 
   .empty-title {
@@ -752,21 +774,22 @@
     align-items: center;
     gap: var(--space-3);
     height: 100vh;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: var(--bg-primary);
-    border-bottom: 1px solid var(--glass-border);
-    animation: fadeIn 0.4s var(--ease-out-quart) both;
+    -webkit-app-region: drag;
+    animation: fadeIn 0.3s var(--ease-out-quart) both;
+    overflow: hidden;
   }
 
   .mini-art {
     width: 48px;
     height: 48px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     overflow: hidden;
     flex-shrink: 0;
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-sm);
-    animation: bounceIn 0.5s var(--ease-out-back) both;
+    -webkit-app-region: no-drag;
   }
 
   .mini-art img {
@@ -787,7 +810,6 @@
   .mini-info {
     flex: 1;
     min-width: 0;
-    animation: slideInLeft 0.5s var(--ease-out-expo) both;
   }
 
   .mini-title {
@@ -805,14 +827,13 @@
   .mini-controls {
     display: flex;
     align-items: center;
-    gap: var(--space-1);
-    animation: fadeIn 0.5s var(--ease-out-quart) both;
-    animation-delay: 0.1s;
+    gap: 2px;
+    -webkit-app-region: no-drag;
   }
 
   .mini-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -822,34 +843,33 @@
     border: none;
     cursor: pointer;
     transition: background var(--duration-fast) var(--ease-out-quart),
-                color var(--duration-fast) var(--ease-out-quart),
-                transform var(--duration-fast) var(--ease-out-back);
+                color var(--duration-fast) var(--ease-out-quart);
   }
 
   .mini-btn:hover {
-    background: hsla(0, 0%, 100%, 0.06);
+    background: hsla(0, 0%, 100%, 0.08);
     color: var(--text-primary);
-    transform: scale(1.1);
   }
 
   .mini-btn:active {
-    transform: scale(0.9);
+    opacity: 0.7;
   }
 
   .mini-play {
+    width: 38px;
+    height: 38px;
     background: var(--accent-gradient);
     color: white;
-    box-shadow: var(--shadow-glow);
+    box-shadow: 0 0 12px var(--accent-glow);
   }
 
   .mini-play:hover {
-    box-shadow: var(--shadow-glow-lg);
-    transform: scale(1.15);
+    box-shadow: 0 0 20px var(--accent-glow-strong);
   }
 
   .mini-exit {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -858,18 +878,17 @@
     background: transparent;
     border: 1px solid var(--glass-border);
     cursor: pointer;
+    -webkit-app-region: no-drag;
     transition: background var(--duration-fast) var(--ease-out-quart),
-                color var(--duration-fast) var(--ease-out-quart),
-                transform var(--duration-fast) var(--ease-out-back);
+                color var(--duration-fast) var(--ease-out-quart);
   }
 
   .mini-exit:hover {
     background: var(--glass-bg-hover);
     color: var(--text-primary);
-    transform: scale(1.1);
   }
 
   .mini-exit:active {
-    transform: scale(0.9);
+    opacity: 0.7;
   }
 </style>

@@ -93,7 +93,7 @@
     position: relative;
     overflow: hidden;
     text-align: left;
-    animation: fadeInScale 0.4s var(--ease-out-expo) both;
+    animation: fadeIn 0.3s var(--ease-out-expo) both;
   }
 
   /* Inner light edge */

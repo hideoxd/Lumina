@@ -22,6 +22,9 @@ fn row_to_track(row: &rusqlite::Row) -> rusqlite::Result<Track> {
         file_size: row.get("file_size")?,
         bitrate: row.get("bitrate")?,
         sample_rate: row.get("sample_rate")?,
+        composer: row.get("composer")?,
+        publisher: row.get("publisher")?,
+        comments: row.get("comments")?,
         artwork_path: row.get("artwork_path")?,
         date_added: row.get("date_added")?,
         last_played: row.get("last_played")?,
@@ -37,11 +40,11 @@ pub fn insert_track(conn: &Connection, track: &Track) -> Result<()> {
         "INSERT INTO tracks (
             id, title, artist, album, album_artist, genre, year,
             track_number, disc_number, duration, file_path, file_format,
-            file_size, bitrate, sample_rate, artwork_path, date_added,
-            last_played, play_count, favorite
+            file_size, bitrate, sample_rate, composer, publisher, comments,
+            artwork_path, date_added, last_played, play_count, favorite
         ) VALUES (
             ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13,
-            ?14, ?15, ?16, ?17, ?18, ?19, ?20
+            ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23
         )
         ON CONFLICT(file_path) DO UPDATE SET
             title=excluded.title,
@@ -57,6 +60,9 @@ pub fn insert_track(conn: &Connection, track: &Track) -> Result<()> {
             file_size=excluded.file_size,
             bitrate=excluded.bitrate,
             sample_rate=excluded.sample_rate,
+            composer=excluded.composer,
+            publisher=excluded.publisher,
+            comments=excluded.comments,
             artwork_path=excluded.artwork_path",
         params![
             track.id,
@@ -74,6 +80,9 @@ pub fn insert_track(conn: &Connection, track: &Track) -> Result<()> {
             track.file_size,
             track.bitrate,
             track.sample_rate,
+            track.composer,
+            track.publisher,
+            track.comments,
             track.artwork_path,
             track.date_added,
             track.last_played,
@@ -81,6 +90,74 @@ pub fn insert_track(conn: &Connection, track: &Track) -> Result<()> {
             track.favorite,
         ],
     )?;
+    Ok(())
+}
+
+pub fn update_track_metadata(
+    conn: &Connection,
+    track_id: &str,
+    title: Option<&str>,
+    artist: Option<&str>,
+    album: Option<&str>,
+    album_artist: Option<&str>,
+    genre: Option<&str>,
+    year: Option<i32>,
+    track_number: Option<i32>,
+    disc_number: Option<i32>,
+    composer: Option<&str>,
+    publisher: Option<&str>,
+    comments: Option<&str>,
+    artwork_path: Option<&str>,
+) -> Result<()> {
+    let mut sets: Vec<String> = Vec::new();
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    macro_rules! push_str {
+        ($col:expr, $val:expr) => {
+            if let Some(v) = $val {
+                sets.push(format!("{} = ?{}", $col, sets.len() + 1));
+                params.push(Box::new(v.to_string()));
+            }
+        };
+    }
+
+    macro_rules! push_i32 {
+        ($col:expr, $val:expr) => {
+            if let Some(v) = $val {
+                sets.push(format!("{} = ?{}", $col, sets.len() + 1));
+                params.push(Box::new(v));
+            }
+        };
+    }
+
+    push_str!("title", title);
+    push_str!("artist", artist);
+    push_str!("album", album);
+    push_str!("album_artist", album_artist);
+    push_str!("genre", genre);
+    push_i32!("year", year);
+    push_i32!("track_number", track_number);
+    push_i32!("disc_number", disc_number);
+    push_str!("composer", composer);
+    push_str!("publisher", publisher);
+    push_str!("comments", comments);
+    push_str!("artwork_path", artwork_path);
+
+    if sets.is_empty() {
+        return Ok(());
+    }
+
+    let where_idx = sets.len() + 1;
+    let sql = format!(
+        "UPDATE tracks SET {} WHERE id = ?{}",
+        sets.join(", "),
+        where_idx,
+    );
+    params.push(Box::new(track_id.to_string()));
+
+    let mut stmt = conn.prepare(&sql)?;
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|b| b.as_ref()).collect();
+    stmt.execute(rusqlite::params_from_iter(param_refs))?;
     Ok(())
 }
 

@@ -152,7 +152,6 @@
     border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.4);
     color: white;
     box-shadow: var(--shadow-sm), 0 0 16px var(--accent-glow);
-    animation: bounceIn 0.5s var(--ease-out-back) both;
   }
 
   .variant-primary:hover {

@@ -8,6 +8,7 @@
   import { setQueue, playQueueIndex } from '$lib/stores/queue';
   import { playlists, refreshPlaylists } from '$lib/stores/playlists';
   import { addTrackToPlaylist, removeTrackFromPlaylist } from '$lib/commands/library';
+  import EditMetadataModal from '$lib/components/overlays/EditMetadataModal.svelte';
 
   let { tracks, onPlay, playlistId }: { tracks: Track[]; onPlay?: (track: Track, index: number) => void; playlistId?: string } = $props();
 
@@ -25,6 +26,8 @@
   let totalHeight = $derived(tracks.length * rowHeight);
 
   let contextMenu = $state<{ x: number; y: number; track: Track; index: number } | null>(null);
+  let editMetadataTrack = $state<Track | null>(null);
+  let showEditMetadata = $state(false);
 
   const artworkCache = new Map<string, string>();
 
@@ -101,6 +104,9 @@
         icon: track.favorite ? 'heart-filled' : 'heart',
         onclick: () => void toggleFavorite(track),
       },
+      { id: 'divider4', divider: true },
+      { id: 'edit-metadata', label: 'Edit Metadata', icon: 'edit',
+        onclick: () => { editMetadataTrack = track; showEditMetadata = true; } },
     );
 
     return items;
@@ -209,19 +215,20 @@
   />
 {/if}
 
+<EditMetadataModal track={editMetadataTrack} open={showEditMetadata} onClose={() => { showEditMetadata = false; }} />
+
 <style>
   .tracklist {
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 420px;
   }
 
   .header {
     display: grid;
     grid-template-columns: 1.6fr 1fr 1fr 44px 80px;
     gap: var(--space-3);
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--glass-border);
     color: var(--text-tertiary);
     font-size: 10px;
@@ -232,6 +239,7 @@
 
   .viewport {
     flex: 1;
+    min-height: 0;
     overflow: auto;
     border-radius: var(--radius-2xl);
   }
@@ -255,32 +263,6 @@
     align-items: center;
     padding: 0 12px;
     border: 1px solid transparent;
-    border-left: none;
-    border-right: none;
-    background: transparent;
-    color: var(--text-primary);
-    text-align: left;
-    cursor: default;
-    transition:
-      background var(--duration-fast) var(--ease-out-quart),
-      border-color var(--duration-fast) var(--ease-out-quart),
-      transform var(--duration-fast) var(--ease-out-back);
-  }
-
-  .row:hover {
-    background: hsla(0, 0%, 100%, 0.04);
-    border-color: hsla(0, 0%, 100%, 0.06);
-    transform: translateX(4px);
-  }
-
-  .row:active {
-    transform: scale(0.99);
-  }
-
-  .cell {
-    min-width: 0;
-  }
-
   .cell-fav {
     display: flex;
     justify-content: center;

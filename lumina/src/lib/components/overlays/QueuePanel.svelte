@@ -172,12 +172,14 @@
   .name {
     font-weight: 700;
     color: var(--text-primary);
+    min-width: 0;
   }
 
   .artist {
     font-size: 11px;
     color: var(--text-tertiary);
     text-align: right;
+    min-width: 0;
   }
 
   .empty {

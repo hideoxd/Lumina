@@ -58,6 +58,7 @@
     border-radius: var(--radius-xl);
     overflow: hidden;
     cursor: pointer;
+    min-width: 0;
     text-align: left;
     padding: 0;
     border: 1px solid var(--glass-border);
@@ -103,6 +104,7 @@
 
   .info {
     padding: var(--space-3) var(--space-4);
+    min-width: 0;
   }
 
   .name {

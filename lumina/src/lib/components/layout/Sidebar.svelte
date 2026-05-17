@@ -304,7 +304,6 @@
   .nav-item:hover {
     background: hsla(0, 0%, 100%, 0.04);
     color: var(--text-primary);
-    transform: translateX(4px);
   }
 
   .nav-item:active {
@@ -315,7 +314,6 @@
     background: var(--accent-gradient-subtle);
     color: var(--accent-primary);
     border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.15);
-    animation: slideInLeft 0.4s var(--ease-out-expo) both;
   }
 
   .nav-icon {
@@ -372,7 +370,6 @@
   /* Playlists */
   .playlists-section {
     flex: 1;
-    overflow-y: auto;
   }
 
   .empty-playlists {

@@ -234,7 +234,7 @@
     opacity: 0.4;
     mix-blend-mode: screen;
     pointer-events: none;
-    animation: breathe 5s ease-in-out infinite;
+    animation: breathe 5s ease-in-out infinite, spin-slow 30s linear infinite;
   }
 
   .art-glow img {
@@ -386,5 +386,10 @@
 
   .play.playing {
     animation: pulse-glow 3.5s ease-in-out infinite;
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 </style>

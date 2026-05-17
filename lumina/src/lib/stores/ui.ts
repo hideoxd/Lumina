@@ -23,6 +23,9 @@ export const settingsOpen = writable(false);
 /** Mini player mode */
 export const miniPlayerMode = writable(false);
 
+/** Last window size before mini player */
+export const lastWindowSize = writable({ width: 1280, height: 800 });
+
 /** Ambient background orbs enabled */
 export const ambientEnabled = writable(true);
 

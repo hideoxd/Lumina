@@ -27,6 +27,7 @@
 
   let menuEl: HTMLDivElement;
   let menuRect = $state<DOMRect | null>(null);
+  let hoveredSubmenu = $state<string | null>(null);
 
   let adjustedX = $derived.by(() => {
     if (!menuRect) return x;
@@ -48,7 +49,8 @@
   });
 
   function handleItemClick(item: MenuItem) {
-    if (item.disabled || item.children) return;
+    if (item.disabled) return;
+    if (item.children) return; // submenu parent — don't close
     item.onclick?.();
     onClose();
   }
@@ -82,31 +84,67 @@
       {#if item.divider}
         <div class="divider"></div>
       {:else}
-        <button
-          class="menu-item"
-          class:danger={item.danger}
-          class:disabled={item.disabled}
-          disabled={item.disabled}
-          role="menuitem"
-          onclick={() => handleItemClick(item)}
+        <div
+          class="menu-item-wrapper"
+          onmouseenter={() => { if (item.children) hoveredSubmenu = item.id; }}
+          onmouseleave={() => { if (item.children) hoveredSubmenu = null; }}
         >
-          {#if item.icon}
-            <span class="item-icon">
-              <Icon name={item.icon} size={14} />
-            </span>
-          {:else}
-            <span class="item-icon-placeholder"></span>
+          <button
+            class="menu-item"
+            class:danger={item.danger}
+            class:disabled={item.disabled}
+            class:has-children={!!item.children}
+            disabled={item.disabled}
+            role="menuitem"
+            onclick={() => handleItemClick(item)}
+          >
+            {#if item.icon}
+              <span class="item-icon">
+                <Icon name={item.icon} size={14} />
+              </span>
+            {:else}
+              <span class="item-icon-placeholder"></span>
+            {/if}
+            <span class="item-label">{item.label}</span>
+            {#if item.shortcut}
+              <span class="item-shortcut">{item.shortcut}</span>
+            {/if}
+            {#if item.children}
+              <span class="item-arrow">
+                <Icon name="chevron-right" size={12} />
+              </span>
+            {/if}
+          </button>
+
+          <!-- Submenu -->
+          {#if item.children && hoveredSubmenu === item.id}
+            <div class="submenu glass">
+              {#each item.children as child}
+                {#if child.divider}
+                  <div class="divider"></div>
+                {:else}
+                  <button
+                    class="menu-item"
+                    class:danger={child.danger}
+                    class:disabled={child.disabled}
+                    disabled={child.disabled}
+                    role="menuitem"
+                    onclick={() => { child.onclick?.(); onClose(); }}
+                  >
+                    {#if child.icon}
+                      <span class="item-icon">
+                        <Icon name={child.icon} size={14} />
+                      </span>
+                    {:else}
+                      <span class="item-icon-placeholder"></span>
+                    {/if}
+                    <span class="item-label">{child.label}</span>
+                  </button>
+                {/if}
+              {/each}
+            </div>
           {/if}
-          <span class="item-label">{item.label}</span>
-          {#if item.shortcut}
-            <span class="item-shortcut">{item.shortcut}</span>
-          {/if}
-          {#if item.children}
-            <span class="item-arrow">
-              <Icon name="chevron-right" size={12} />
-            </span>
-          {/if}
-        </button>
+        </div>
       {/if}
     {/each}
   </div>
@@ -121,8 +159,8 @@
 
   .context-menu {
     position: absolute;
-    min-width: 200px;
-    max-width: 280px;
+    min-width: 220px;
+    max-width: 300px;
     padding: 6px;
     border-radius: var(--radius-xl);
     border: 1px solid var(--glass-border);
@@ -132,7 +170,7 @@
     box-shadow: var(--shadow-lg), var(--shadow-glow);
     animation: fadeInScale var(--duration-fast) var(--ease-out-expo) both;
     transform-origin: top left;
-    overflow: hidden;
+    overflow: visible;
     z-index: var(--z-tooltip);
   }
 
@@ -152,6 +190,10 @@
   :global([data-theme="light"]) .context-menu {
     background: hsla(225, 18%, 96%, 0.92);
     border-color: hsla(0, 0%, 0%, 0.08);
+  }
+
+  .menu-item-wrapper {
+    position: relative;
   }
 
   .menu-item {
@@ -240,5 +282,45 @@
     height: 1px;
     margin: 4px 8px;
     background: var(--glass-border);
+  }
+
+  /* Submenu */
+  .submenu {
+    position: absolute;
+    left: 100%;
+    top: -6px;
+    min-width: 180px;
+    max-width: 260px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 6px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--glass-border);
+    background: hsla(225, 18%, 10%, 0.92);
+    backdrop-filter: blur(32px) saturate(1.6);
+    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    animation: fadeInScale var(--duration-fast) var(--ease-out-expo) both;
+    transform-origin: top left;
+    z-index: 1;
+    margin-left: 4px;
+  }
+
+  :global([data-theme="light"]) .submenu {
+    background: hsla(225, 18%, 96%, 0.92);
+    border-color: hsla(0, 0%, 0%, 0.08);
+  }
+
+  .submenu::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsla(0, 0%, 100%, 0.06) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
   }
 </style>
