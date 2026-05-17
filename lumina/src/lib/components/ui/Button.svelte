@@ -1,6 +1,6 @@
 <!--
-  GlassButton — Frosted glass button with multiple variants
-  Usage: <GlassButton variant="primary" icon="play" size="md">Label</GlassButton>
+  Button — Frosted glass button with multiple variants
+  Usage: <Button variant="primary" icon="play" size="md">Label</Button>
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -80,8 +80,7 @@
     white-space: nowrap;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
-    backdrop-filter: blur(12px) saturate(1.4);
-    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+
     color: var(--text-primary);
     cursor: pointer;
     position: relative;
@@ -171,8 +170,7 @@
   .variant-ghost {
     background: transparent;
     border-color: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+
   }
 
   .variant-ghost:hover {
@@ -187,8 +185,7 @@
   .variant-icon {
     background: transparent;
     border-color: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+
     padding: 0;
     aspect-ratio: 1;
     border-radius: var(--radius-lg);

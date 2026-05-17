@@ -1,6 +1,6 @@
 <script lang="ts">
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
 
   import { queuePanelOpen } from '$lib/stores/ui';
@@ -33,7 +33,7 @@
     onkeydown={handleBackdropKeydown}
   >
     <div class="panel" role="dialog" aria-modal="true" aria-label="Queue">
-      <GlassCard padding="lg" radius="2xl" class="surface">
+      <Card padding="lg" radius="2xl" class="surface">
         <div class="header">
           <div class="title">
             <Icon name="queue" size={16} />
@@ -41,9 +41,9 @@
             <span class="count">{$queueState.tracks.length}</span>
           </div>
 
-          <GlassButton variant="icon" size="sm" title="Close" onclick={close}>
+          <Button variant="icon" size="sm" title="Close" onclick={close}>
             <Icon name="x" size={16} />
-          </GlassButton>
+          </Button>
         </div>
 
         <div class="list" role="list">
@@ -67,7 +67,7 @@
             {/each}
           {/if}
         </div>
-      </GlassCard>
+      </Card>
       </div>
   </div>
 {/if}
@@ -78,8 +78,7 @@
     inset: 0;
     z-index: var(--z-overlay);
     background: hsla(0, 0%, 0%, 0.35);
-    backdrop-filter: blur(10px) saturate(1.1);
-    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+
     animation: fadeIn var(--duration-normal) var(--ease-out-quart) both;
   }
 

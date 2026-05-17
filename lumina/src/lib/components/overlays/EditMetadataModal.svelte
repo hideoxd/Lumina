@@ -1,6 +1,6 @@
 <script lang="ts">
-  import GlassModal from '$lib/components/glass/GlassModal.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import Modal from '$lib/components/ui/Modal.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import { updateTrackMetadata } from '$lib/commands/library';
   import { patchTrack } from '$lib/stores/library';
   import type { Track } from '$lib/types';
@@ -80,7 +80,7 @@
   }
 </script>
 
-<GlassModal title="Edit Metadata" size="sm" {open} onClose={onClose}>
+<Modal title="Edit Metadata" size="sm" {open} onClose={onClose}>
   {#snippet children()}
     <div class="edit-modal">
       <div class="field">
@@ -139,13 +139,13 @@
   {/snippet}
   {#snippet footer()}
     <div class="edit-footer">
-      <GlassButton variant="ghost" onclick={onClose}>Cancel</GlassButton>
-      <GlassButton variant="primary" onclick={handleSave} disabled={saving || !title.trim()}>
+      <Button variant="ghost" onclick={onClose}>Cancel</Button>
+      <Button variant="primary" onclick={handleSave} disabled={saving || !title.trim()}>
         {saving ? 'Saving...' : 'Save'}
-      </GlassButton>
+      </Button>
     </div>
   {/snippet}
-</GlassModal>
+</Modal>
 
 <style>
   .edit-modal {

@@ -126,18 +126,15 @@ export function applyTheme(theme: ThemePreset) {
   root.style.setProperty('--radius-xl', `${r + 4}px`);
   root.style.setProperty('--radius-2xl', `${r + 8}px`);
 
-  // Glass opacity (adjust the glass-bg alpha)
-  const glassAlpha = Math.max(0.05, Math.min(0.92, theme.glassOpacity));
-  const hoverAlpha = Math.max(0.05, Math.min(0.94, glassAlpha + (theme.mode === 'dark' ? 0.08 : 0.06)));
-  const activeAlpha = Math.max(0.05, Math.min(0.96, glassAlpha + (theme.mode === 'dark' ? 0.12 : 0.10)));
+  // Surface backgrounds (Solid colors, no glass)
   if (theme.mode === 'dark') {
-    root.style.setProperty('--glass-bg', `hsla(225, 20%, 15%, ${glassAlpha})`);
-    root.style.setProperty('--glass-bg-hover', `hsla(225, 20%, 18%, ${hoverAlpha})`);
-    root.style.setProperty('--glass-bg-active', `hsla(225, 20%, 12%, ${activeAlpha})`);
+    root.style.setProperty('--glass-bg', `hsl(0, 0%, 10%)`);
+    root.style.setProperty('--glass-bg-hover', `hsl(0, 0%, 15%)`);
+    root.style.setProperty('--glass-bg-active', `hsl(0, 0%, 20%)`);
   } else {
-    root.style.setProperty('--glass-bg', `hsla(225, 20%, 100%, ${glassAlpha})`);
-    root.style.setProperty('--glass-bg-hover', `hsla(225, 20%, 100%, ${hoverAlpha})`);
-    root.style.setProperty('--glass-bg-active', `hsla(225, 20%, 95%, ${activeAlpha})`);
+    root.style.setProperty('--glass-bg', `hsl(0, 0%, 98%)`);
+    root.style.setProperty('--glass-bg-hover', `hsl(0, 0%, 94%)`);
+    root.style.setProperty('--glass-bg-active', `hsl(0, 0%, 90%)`);
   }
 
   // Animation speed (scale durations)

@@ -3,8 +3,8 @@
 -->
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
-  import GlassModal from '$lib/components/glass/GlassModal.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Modal from '$lib/components/ui/Modal.svelte';
   import { currentView, sidebarCollapsed, navItems, navigateTo, toggleSidebar } from '$lib/stores/ui';
   import { trackCount } from '$lib/stores/library';
   import { playlists, refreshPlaylists, selectPlaylist } from '$lib/stores/playlists';
@@ -143,14 +143,14 @@
 
   <!-- Collapse toggle -->
   <div class="sidebar-footer">
-    <GlassButton variant="icon" size="sm" title={$sidebarCollapsed ? 'Expand' : 'Collapse'} onclick={toggleSidebar}>
+    <Button variant="icon" size="sm" title={$sidebarCollapsed ? 'Expand' : 'Collapse'} onclick={toggleSidebar}>
       <Icon name={$sidebarCollapsed ? 'chevron-right' : 'chevron-left'} size={16} />
-    </GlassButton>
+    </Button>
   </div>
 </aside>
 
 {#if showCreateModal}
-  <GlassModal title="New Playlist" size="sm" open={showCreateModal} onClose={() => showCreateModal = false}>
+  <Modal title="New Playlist" size="sm" open={showCreateModal} onClose={() => showCreateModal = false}>
     {#snippet children()}
       <div class="create-modal">
         <input
@@ -164,13 +164,13 @@
     {/snippet}
     {#snippet footer()}
       <div class="create-footer">
-        <GlassButton variant="ghost" onclick={() => showCreateModal = false}>Cancel</GlassButton>
-        <GlassButton variant="primary" onclick={handleCreatePlaylist} disabled={!newPlaylistName.trim()}>
+        <Button variant="ghost" onclick={() => showCreateModal = false}>Cancel</Button>
+        <Button variant="primary" onclick={handleCreatePlaylist} disabled={!newPlaylistName.trim()}>
           Create
-        </GlassButton>
+        </Button>
       </div>
     {/snippet}
-  </GlassModal>
+  </Modal>
 {/if}
 
 <style>
@@ -207,8 +207,7 @@
     width: var(--sidebar-width);
     height: 100%;
     background: hsla(225, 15%, 8%, 0.5);
-    backdrop-filter: blur(16px) saturate(1.3);
-    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+
     border-right: 1px solid var(--glass-border);
     padding: var(--space-3) 0;
     overflow-y: auto;

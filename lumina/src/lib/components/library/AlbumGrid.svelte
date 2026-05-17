@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import type { Album, Track } from '$lib/types';
   import { getArtworkUrl } from '$lib/utils/artwork';
@@ -46,12 +46,12 @@
 
 <div class="grid stagger-enter">
   {#if filtered.length === 0}
-    <GlassCard padding="lg" radius="2xl">
+    <Card padding="lg" radius="2xl">
       <p class="empty">No albums match your search.</p>
-    </GlassCard>
+    </Card>
   {:else}
     {#each filtered as album, idx (album.id)}
-      <GlassCard
+      <Card
         padding="md"
         radius="2xl"
         class="album hover-lift"
@@ -86,7 +86,7 @@
           <div class="sub truncate" title={album.artist}>{album.artist}</div>
           <div class="count">{album.track_count} tracks</div>
         </div>
-      </GlassCard>
+      </Card>
     {/each}
   {/if}
 </div>

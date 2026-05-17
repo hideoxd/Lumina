@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Playlist } from '$lib/types';
   import Icon from '$lib/components/Icon.svelte';
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
 
   let { playlists, onSelect }: { playlists: Playlist[]; onSelect: (playlist: Playlist) => void } = $props();
 
@@ -63,7 +63,7 @@
     padding: 0;
     border: 1px solid var(--glass-border);
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+
     transition:
       transform var(--duration-normal) var(--ease-out-quart),
       box-shadow var(--duration-normal) var(--ease-out-quart),

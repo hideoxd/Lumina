@@ -1,6 +1,6 @@
 <!--
-  GlassSlider — Premium slider with glass track and glowing thumb
-  Usage: <GlassSlider bind:value min={0} max={100} />
+  Slider — Premium slider with glass track and glowing thumb
+  Usage: <Slider bind:value min={0} max={100} />
 -->
 <script lang="ts">
   interface Props {

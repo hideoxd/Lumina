@@ -1,6 +1,6 @@
 <script lang="ts">
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
 
   import { nowPlayingFullscreen } from '$lib/stores/ui';
@@ -48,16 +48,16 @@
 
       <div class="topbar">
         <div class="top-left">
-          <GlassButton variant="icon" size="sm" title="Close" onclick={close}>
+          <Button variant="icon" size="sm" title="Close" onclick={close}>
             <Icon name="chevron-down" size={18} />
-          </GlassButton>
+          </Button>
           <span class="label">Now Playing</span>
         </div>
 
         <div class="top-right">
-          <GlassButton variant="icon" size="sm" title="Queue" onclick={() => {}}>
+          <Button variant="icon" size="sm" title="Queue" onclick={() => {}}>
             <Icon name="queue" size={16} />
-          </GlassButton>
+          </Button>
         </div>
       </div>
 
@@ -105,11 +105,11 @@
             <span class="time-label">{formatTime($playerState.duration)}</span>
           </div>
 
-          <GlassCard padding="md" radius="xl" class="controls" accent>
+          <Card padding="md" radius="xl" class="controls" accent>
             <div class="btns">
-              <GlassButton variant="icon" size="sm" title="Previous" onclick={() => void playPrevious()}>
+              <Button variant="icon" size="sm" title="Previous" onclick={() => void playPrevious()}>
                 <Icon name="skip-back" size={18} />
-              </GlassButton>
+              </Button>
 
               <button class="play" class:playing={$isPlaying} onclick={() => void togglePlayPause()}>
                 {#if $isPlaying}
@@ -119,11 +119,11 @@
                 {/if}
               </button>
 
-              <GlassButton variant="icon" size="sm" title="Next" onclick={() => void playNext()}>
+              <Button variant="icon" size="sm" title="Next" onclick={() => void playNext()}>
                 <Icon name="skip-forward" size={18} />
-              </GlassButton>
+              </Button>
             </div>
-          </GlassCard>
+          </Card>
         </div>
       </div>
     </div>
@@ -136,8 +136,7 @@
     inset: 0;
     z-index: var(--z-overlay);
     background: hsla(0, 0%, 0%, 0.6);
-    backdrop-filter: blur(40px) saturate(1.5);
-    -webkit-backdrop-filter: blur(40px) saturate(1.5);
+
     display: flex;
     align-items: stretch;
     justify-content: stretch;

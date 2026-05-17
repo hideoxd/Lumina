@@ -1,14 +1,14 @@
 <!--
-  GlassModal — Premium modal with glass surface + blur backdrop
+  Modal — Premium modal with glass surface + blur backdrop
   Usage:
-    <GlassModal open={open} title="Settings" onClose={() => open=false}>
+    <Modal open={open} title="Settings" onClose={() => open=false}>
       <div>...</div>
-    </GlassModal>
+    </Modal>
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
 
   export interface Props {
@@ -78,14 +78,14 @@
       tabindex="-1"
       style="max-width: {widthMap[size]}"
     >
-      <GlassCard padding="lg" radius="2xl" class="modal-surface" accent>
+      <Card padding="lg" radius="2xl" class="modal-surface" accent>
         <div class="header">
           <div class="title-row">
             <h2 class="title">{title}</h2>
           </div>
-          <GlassButton variant="icon" size="sm" title="Close" onclick={close}>
+          <Button variant="icon" size="sm" title="Close" onclick={close}>
             <Icon name="x" size={16} />
-          </GlassButton>
+          </Button>
         </div>
 
         <div class="content">
@@ -97,7 +97,7 @@
             {@render footer()}
           </div>
         {/if}
-      </GlassCard>
+      </Card>
     </div>
   </div>
 {/if}
@@ -117,8 +117,6 @@
       radial-gradient(900px 700px at 80% 80%, hsla(calc(var(--accent-h) + 60), 90%, 60%, 0.08) 0%, transparent 55%),
       hsla(0, 0%, 0%, 0.45);
 
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     animation: fadeIn var(--duration-normal) var(--ease-out-quart) both;
   }
 

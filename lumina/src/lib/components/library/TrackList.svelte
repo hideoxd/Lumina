@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-  import ContextMenu from '$lib/components/glass/ContextMenu.svelte';
+  import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
   import type { Track, MenuItem } from '$lib/types';
   import { getArtworkUrl } from '$lib/utils/artwork';
   import { setTrackFavorite } from '$lib/commands/library';

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import type { Artist, Track } from '$lib/types';
   import { getArtworkUrl } from '$lib/utils/artwork';
@@ -45,12 +45,12 @@
 
 <div class="grid stagger-enter">
   {#if filtered.length === 0}
-    <GlassCard padding="lg" radius="2xl">
+    <Card padding="lg" radius="2xl">
       <p class="empty">No artists match your search.</p>
-    </GlassCard>
+    </Card>
   {:else}
     {#each filtered as artist, idx (artist.id)}
-      <GlassCard
+      <Card
         padding="md"
         radius="2xl"
         class="artist hover-lift"
@@ -87,7 +87,7 @@
             </div>
           </div>
         </div>
-      </GlassCard>
+      </Card>
     {/each}
   {/if}
 </div>

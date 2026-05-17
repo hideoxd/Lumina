@@ -155,8 +155,7 @@
     border-radius: var(--radius-xl);
     border: 1px solid var(--glass-border);
     background: hsla(225, 18%, 10%, 0.92);
-    backdrop-filter: blur(32px) saturate(1.6);
-    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+
     box-shadow: var(--shadow-lg), var(--shadow-glow);
     animation: fadeInScale var(--duration-fast) var(--ease-out-expo) both;
     transform-origin: top left;
@@ -287,8 +286,7 @@
     border-radius: var(--radius-xl);
     border: 1px solid var(--glass-border);
     background: hsla(225, 18%, 10%, 0.92);
-    backdrop-filter: blur(32px) saturate(1.6);
-    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+
     box-shadow: var(--shadow-lg), var(--shadow-glow);
     animation: fadeInScale var(--duration-fast) var(--ease-out-expo) both;
     transform-origin: top left;

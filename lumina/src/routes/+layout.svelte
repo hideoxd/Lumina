@@ -18,8 +18,7 @@
   });
 </script>
 
-<!-- Global noise texture overlay for Liquid Glass effect -->
-<div class="noise-overlay" aria-hidden="true"></div>
+<!-- Background is now handled directly by the body/app-root solid colors -->
 
 {#if mounted}
   <div class="app-root" class:mounted>
@@ -36,20 +35,14 @@
               <stop offset="0%" stop-color="var(--accent-primary)" />
               <stop offset="100%" stop-color="var(--accent-secondary)" />
             </linearGradient>
-            <filter id="splashGlow">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
+
           </defs>
           <!-- Outer ring -->
           <circle cx="32" cy="32" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.3" />
           <!-- Middle ring -->
           <circle cx="32" cy="32" r="20" stroke="url(#logoGrad)" stroke-width="1.5" fill="none" opacity="0.5" />
-          <!-- Inner circle with glow -->
-          <circle cx="32" cy="32" r="14" fill="url(#logoGrad)" opacity="0.8" filter="url(#splashGlow)" />
+          <!-- Inner circle -->
+          <circle cx="32" cy="32" r="14" fill="url(#logoGrad)" opacity="0.8" />
           <!-- Play triangle -->
           <path d="M27 23L42 32L27 41Z" fill="white" opacity="0.9" />
         </svg>

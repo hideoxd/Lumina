@@ -7,7 +7,7 @@
   import Icon from '$lib/components/Icon.svelte';
   import { searchQuery, searchFocused, settingsOpen } from '$lib/stores/ui';
   import { activeTheme, toggleMode } from '$lib/stores/theme';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
 
   let isMaximized = $state(false);
   let searchInputEl: HTMLInputElement;
@@ -114,14 +114,14 @@
   <!-- Right: Controls -->
   <div class="titlebar-right">
     <!-- Theme toggle -->
-    <GlassButton variant="icon" size="sm" title="Toggle theme" onclick={() => toggleMode()}>
+    <Button variant="icon" size="sm" title="Toggle theme" onclick={() => toggleMode()}>
       <Icon name={$activeTheme.mode === 'dark' ? 'sun' : 'moon'} size={15} />
-    </GlassButton>
+    </Button>
 
     <!-- Settings -->
-    <GlassButton variant="icon" size="sm" title="Settings" onclick={() => settingsOpen.update(v => !v)}>
+    <Button variant="icon" size="sm" title="Settings" onclick={() => settingsOpen.update(v => !v)}>
       <Icon name="settings" size={15} />
-    </GlassButton>
+    </Button>
 
     <!-- Window controls (separated) -->
     <div class="window-controls">
@@ -146,8 +146,7 @@
     height: var(--titlebar-height);
     padding: 0 var(--space-3);
     background: hsla(225, 15%, 8%, 0.8);
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+
     border-bottom: 1px solid var(--glass-border);
     -webkit-app-region: drag;
     position: relative;

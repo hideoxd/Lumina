@@ -2,8 +2,8 @@
   import Titlebar from '$lib/components/layout/Titlebar.svelte';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import PlayerBar from '$lib/components/layout/PlayerBar.svelte';
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen, lastWindowSize, queuePanelOpen } from '$lib/stores/ui';
   import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks } from '$lib/stores/library';
@@ -172,14 +172,7 @@
 
   <!-- Main Content Area -->
   <main class="app-content">
-    <!-- Ambient background gradient (animated) -->
-      {#if $ambientEnabled}
-        <div class="ambient-bg" aria-hidden="true">
-          <div class="ambient-orb orb-1"></div>
-          <div class="ambient-orb orb-2"></div>
-          <div class="ambient-orb orb-3"></div>
-        </div>
-      {/if}
+
 
     <div class="content-inner">
       {#if $currentView === 'tracks'}
@@ -190,22 +183,22 @@
             <span class="view-count">{$trackCount} tracks</span>
           </div>
           <div class="view-actions">
-            <GlassButton variant="default" size="sm">
+            <Button variant="default" size="sm">
               <Icon name="grid" size={14} />
-            </GlassButton>
-            <GlassButton variant="default" size="sm">
+            </Button>
+            <Button variant="default" size="sm">
               <Icon name="list-view" size={14} />
-            </GlassButton>
-            <GlassButton variant="primary" size="sm" onclick={handleAddMusic}>
+            </Button>
+            <Button variant="primary" size="sm" onclick={handleAddMusic}>
               <Icon name="folder-plus" size={14} />
               <span>Add Music</span>
-            </GlassButton>
+            </Button>
           </div>
         </div>
 
         {#if $libraryLoading && $scanProgress}
           <div class="scan-status animate-fade-in-up delay-1">
-            <GlassCard padding="md" radius="xl">
+            <Card padding="md" radius="xl">
               <div class="scan-row">
                 <div class="scan-left">
                   <div class="scan-dot"></div>
@@ -221,14 +214,14 @@
                   </div>
                 </div>
               </div>
-            </GlassCard>
+            </Card>
           </div>
         {/if}
 
         <!-- Empty state (shown when no tracks) -->
         {#if $trackCount === 0}
           <div class="empty-state animate-fade-in-up delay-2">
-            <GlassCard padding="xl" radius="2xl">
+            <Card padding="xl" radius="2xl">
               <div class="empty-content">
                 <div class="empty-icon-container">
                   <div class="empty-icon-ring ring-1"></div>
@@ -246,10 +239,10 @@
                 </p>
 
                 <div class="empty-actions">
-                  <GlassButton variant="primary" size="lg" onclick={handleAddMusic}>
+                  <Button variant="primary" size="lg" onclick={handleAddMusic}>
                     <Icon name="folder-plus" size={18} />
                     <span>Add Music Folder</span>
-                  </GlassButton>
+                  </Button>
                 </div>
 
                 <div class="supported-formats">
@@ -261,13 +254,13 @@
                   </div>
                 </div>
               </div>
-            </GlassCard>
+            </Card>
           </div>
         {:else}
           <div class="tracks-list animate-fade-in-up delay-1">
-            <GlassCard padding="md" radius="2xl" class="tracks-card">
+            <Card padding="md" radius="2xl" class="tracks-card">
               <TrackList tracks={$visibleTracks} onPlay={handlePlayFromList} />
-            </GlassCard>
+            </Card>
           </div>
         {/if}
 
@@ -313,27 +306,27 @@
               <span class="view-count">{$playlistTracks.length} tracks</span>
             </div>
             <div class="view-actions">
-              <GlassButton variant="ghost" size="sm" onclick={handleDeleteCurrentPlaylist}>
+              <Button variant="ghost" size="sm" onclick={handleDeleteCurrentPlaylist}>
                 <Icon name="x" size={14} />
                 <span>Delete</span>
-              </GlassButton>
+              </Button>
             </div>
           </div>
           {#if $playlistTracks.length === 0}
             <div class="placeholder-view animate-fade-in-up delay-1">
-              <GlassCard padding="lg" radius="2xl">
+              <Card padding="lg" radius="2xl">
                 <p class="text-secondary">This playlist is empty. Add tracks from your library.</p>
-              </GlassCard>
+              </Card>
             </div>
           {:else}
             <div class="tracks-list animate-fade-in-up delay-1">
-              <GlassCard padding="md" radius="2xl" class="tracks-card">
+              <Card padding="md" radius="2xl" class="tracks-card">
                 <TrackList
                   tracks={$playlistTracks}
                   playlistId={$selectedPlaylist?.id}
                   onPlay={(t, i) => void handlePlayPlaylist($playlistTracks, i)}
                 />
-              </GlassCard>
+              </Card>
             </div>
           {/if}
         {:else}
@@ -345,9 +338,9 @@
           </div>
           {#if $playlists.length === 0}
             <div class="placeholder-view animate-fade-in-up delay-1">
-              <GlassCard padding="lg" radius="2xl">
+              <Card padding="lg" radius="2xl">
                 <p class="text-secondary">No playlists yet. Click + in the sidebar to create one.</p>
-              </GlassCard>
+              </Card>
             </div>
           {:else}
             <div class="animate-fade-in-up delay-1">
@@ -365,18 +358,18 @@
         </div>
         {#if visibleFavorites.length === 0}
           <div class="placeholder-view animate-fade-in-up delay-1">
-            <GlassCard padding="lg" radius="2xl">
+            <Card padding="lg" radius="2xl">
               <p class="text-secondary">No favorites yet — tap the heart on a track to add it here.</p>
-            </GlassCard>
+            </Card>
           </div>
         {:else}
           <div class="tracks-list animate-fade-in-up delay-1">
-            <GlassCard padding="md" radius="2xl" class="tracks-card">
+            <Card padding="md" radius="2xl" class="tracks-card">
               <TrackList
                 tracks={visibleFavorites}
                 onPlay={(t, i) => void handlePlayFromCustomList(visibleFavorites, i)}
               />
-            </GlassCard>
+            </Card>
           </div>
         {/if}
 
@@ -389,18 +382,18 @@
         </div>
         {#if recentTracks.length === 0}
           <div class="placeholder-view animate-fade-in-up delay-1">
-            <GlassCard padding="lg" radius="2xl">
+            <Card padding="lg" radius="2xl">
               <p class="text-secondary">Nothing here yet — play a track and it will show up in Recent.</p>
-            </GlassCard>
+            </Card>
           </div>
         {:else}
           <div class="tracks-list animate-fade-in-up delay-1">
-            <GlassCard padding="md" radius="2xl" class="tracks-card">
+            <Card padding="md" radius="2xl" class="tracks-card">
               <TrackList
                 tracks={recentTracks}
                 onPlay={(t, i) => void handlePlayFromCustomList(recentTracks, i)}
               />
-            </GlassCard>
+            </Card>
           </div>
         {/if}
       {/if}
@@ -420,57 +413,7 @@
 <QueuePanel />
 
 <style>
-  /* ---- Ambient Background ---- */
-  .ambient-bg {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: -1;
-  }
 
-  .ambient-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.12;
-    animation: float 20s ease-in-out infinite;
-  }
-
-  .orb-1 {
-    width: 500px;
-    height: 500px;
-    background: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
-    top: -200px;
-    right: -100px;
-    animation-delay: 0s;
-  }
-
-  .orb-2 {
-    width: 400px;
-    height: 400px;
-    background: hsl(calc(var(--accent-h) + 60), 80%, 55%);
-    bottom: -150px;
-    left: -100px;
-    animation-delay: -7s;
-  }
-
-  .orb-3 {
-    width: 300px;
-    height: 300px;
-    background: hsl(calc(var(--accent-h) + 120), 70%, 50%);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation-delay: -14s;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(30px, -20px) scale(1.05); }
-    50% { transform: translate(-20px, 30px) scale(0.95); }
-    75% { transform: translate(15px, 15px) scale(1.02); }
-  }
 
   .app-content {
     grid-area: content;

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import GlassModal from '$lib/components/glass/GlassModal.svelte';
-  import GlassCard from '$lib/components/glass/GlassCard.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
-  import GlassSlider from '$lib/components/glass/GlassSlider.svelte';
-  import GlassToggle from '$lib/components/glass/GlassToggle.svelte';
+  import Modal from '$lib/components/ui/Modal.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Slider from '$lib/components/ui/Slider.svelte';
+  import Toggle from '$lib/components/ui/Toggle.svelte';
 
   import {
     activeTheme,
@@ -49,9 +49,9 @@
   }
 </script>
 
-<GlassModal open={$settingsOpen} title="Settings" size="lg" onClose={close}>
+<Modal open={$settingsOpen} title="Settings" size="lg" onClose={close}>
   <div class="grid">
-    <GlassCard padding="lg" radius="xl">
+    <Card padding="lg" radius="xl">
       <h3 class="section">Theme</h3>
       <p class="hint">Pick a preset, then fine-tune. Changes apply instantly.</p>
 
@@ -71,18 +71,18 @@
       </div>
 
       <div class="row">
-        <GlassButton variant="default" size="sm" onclick={() => toggleMode()}>
+        <Button variant="default" size="sm" onclick={() => toggleMode()}>
           Toggle {($activeTheme.mode === 'dark') ? 'Light' : 'Dark'} Mode
-        </GlassButton>
+        </Button>
       </div>
-    </GlassCard>
+    </Card>
 
-    <GlassCard padding="lg" radius="xl">
+    <Card padding="lg" radius="xl">
       <h3 class="section">Accent</h3>
 
       <div class="control">
         <div class="label">Hue</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.accentHue}
           min={0}
           max={360}
@@ -96,7 +96,7 @@
 
       <div class="control">
         <div class="label">Saturation</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.accentSaturation}
           min={0}
           max={100}
@@ -110,7 +110,7 @@
 
       <div class="control">
         <div class="label">Lightness</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.accentLightness}
           min={0}
           max={100}
@@ -121,14 +121,14 @@
           oninput={(v) => setAccentLightness(v)}
         />
       </div>
-    </GlassCard>
+    </Card>
 
-    <GlassCard padding="lg" radius="xl">
+    <Card padding="lg" radius="xl">
       <h3 class="section">Glass</h3>
 
       <div class="control">
         <div class="label">Blur</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.glassBlur}
           min={0}
           max={64}
@@ -142,7 +142,7 @@
 
       <div class="control">
         <div class="label">Opacity</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.glassOpacity * 100}
           min={5}
           max={92}
@@ -156,7 +156,7 @@
 
       <div class="control">
         <div class="label">Noise</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.noiseOpacity * 100}
           min={0}
           max={12}
@@ -170,7 +170,7 @@
 
       <div class="control">
         <div class="label">Corner radius</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.borderRadius}
           min={8}
           max={28}
@@ -183,21 +183,21 @@
       </div>
 
       <div class="toggles">
-        <GlassToggle
+        <Toggle
           checked={$glassEffectsEnabled}
           label="Glass effects"
           description="Disabling removes blur for lower-end machines."
           onchange={(v) => glassEffectsEnabled.set(v)}
         />
       </div>
-    </GlassCard>
+    </Card>
 
-    <GlassCard padding="lg" radius="xl">
+    <Card padding="lg" radius="xl">
       <h3 class="section">Motion & Layout</h3>
 
       <div class="control">
         <div class="label">Animation speed</div>
-        <GlassSlider
+        <Slider
           value={$activeTheme.animationSpeed}
           min={0.5}
           max={2}
@@ -210,23 +210,23 @@
       </div>
 
       <div class="toggles">
-        <GlassToggle
+        <Toggle
           checked={$ambientEnabled}
           label="Ambient background"
           description="The floating orbs behind content."
           onchange={(v) => ambientEnabled.set(v)}
         />
 
-        <GlassToggle
+        <Toggle
           checked={$miniPlayerMode}
           label="Mini player mode"
           description="Shrinks the window and sets Always-on-top."
           onchange={(v) => void toggleMiniPlayer(v)}
         />
       </div>
-    </GlassCard>
+    </Card>
   </div>
-</GlassModal>
+</Modal>
 
 <style>
   .grid {

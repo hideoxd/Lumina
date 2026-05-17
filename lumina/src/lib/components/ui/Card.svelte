@@ -1,6 +1,6 @@
 <!--
-  GlassCard — Core glass surface component
-  Usage: <GlassCard padding="lg" interactive hover>content</GlassCard>
+  Card — Core glass surface component
+  Usage: <Card padding="lg" interactive hover>content</Card>
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -86,8 +86,7 @@
 <style>
   .glass-card {
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-sm), var(--shadow-inset);
     position: relative;

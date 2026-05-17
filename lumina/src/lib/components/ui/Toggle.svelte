@@ -1,6 +1,6 @@
 <!--
-  GlassToggle — Premium switch/toggle
-  Usage: <GlassToggle bind:checked label="Ambient background" />
+  Toggle — Premium switch/toggle
+  Usage: <Toggle bind:checked label="Ambient background" />
 -->
 <script lang="ts">
   export interface Props {
@@ -67,8 +67,6 @@
     padding: 0;
     flex-shrink: 0;
 
-    backdrop-filter: blur(10px) saturate(1.4);
-    -webkit-backdrop-filter: blur(10px) saturate(1.4);
 
     transition:
       background var(--duration-fast) var(--ease-out-quart),

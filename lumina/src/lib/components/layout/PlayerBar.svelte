@@ -3,8 +3,8 @@
 -->
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-  import GlassButton from '$lib/components/glass/GlassButton.svelte';
-  import GlassSlider from '$lib/components/glass/GlassSlider.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Slider from '$lib/components/ui/Slider.svelte';
   import { playerState, currentTrack, isPlaying, progress, formatTime } from '$lib/stores/player';
   import { nowPlayingFullscreen, toggleQueue, queuePanelOpen } from '$lib/stores/ui';
   import { playNext, playPrevious, seekToSeconds, setPlayerVolume01, togglePlayPause } from '$lib/stores/queue';
@@ -134,7 +134,7 @@
       </div>
 
       <!-- Favorite button -->
-      <GlassButton
+      <Button
         variant="icon"
         size="xs"
         title={$currentTrack?.favorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -145,13 +145,13 @@
           size={14}
           color={$currentTrack?.favorite ? 'var(--accent-primary)' : 'var(--text-secondary)'}
         />
-      </GlassButton>
+      </Button>
     </div>
 
     <!-- Center: Playback controls + progress -->
     <div class="player-center">
       <div class="playback-controls">
-        <GlassButton
+        <Button
           variant="icon"
           size="sm"
           title={isShuffled ? 'Shuffle on' : 'Shuffle off'}
@@ -162,11 +162,11 @@
             size={15}
             color={isShuffled ? 'var(--accent-primary)' : 'var(--text-secondary)'}
           />
-        </GlassButton>
+        </Button>
 
-        <GlassButton variant="icon" size="sm" title="Previous" onclick={() => void playPrevious()}>
+        <Button variant="icon" size="sm" title="Previous" onclick={() => void playPrevious()}>
           <Icon name="skip-back" size={16} />
-        </GlassButton>
+        </Button>
 
         <!-- Play/Pause button — larger, accent-colored -->
         <button class="play-btn" class:playing={$isPlaying} onclick={() => void togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
@@ -179,11 +179,11 @@
           </div>
         </button>
 
-        <GlassButton variant="icon" size="sm" title="Next" onclick={() => void playNext()}>
+        <Button variant="icon" size="sm" title="Next" onclick={() => void playNext()}>
           <Icon name="skip-forward" size={16} />
-        </GlassButton>
+        </Button>
 
-        <GlassButton
+        <Button
           variant="icon"
           size="sm"
           title={repeatMode === 'off' ? 'Repeat off' : repeatMode === 'all' ? 'Repeat all' : 'Repeat one'}
@@ -194,14 +194,14 @@
             size={15}
             color={repeatMode !== 'off' ? 'var(--accent-primary)' : 'var(--text-secondary)'}
           />
-        </GlassButton>
+        </Button>
       </div>
 
       <!-- Progress bar -->
       <div class="progress-row">
         <span class="time-label">{formatTime(currentTime)}</span>
         <div class="progress-slider">
-          <GlassSlider
+          <Slider
             bind:value={progressValue}
             min={0}
             max={100}
@@ -224,7 +224,7 @@
 
     <!-- Right: Volume + extra controls -->
     <div class="player-right">
-      <GlassButton
+      <Button
         variant="icon"
         size="sm"
         title={$queuePanelOpen ? 'Hide queue' : 'Show queue'}
@@ -235,14 +235,14 @@
           size={15}
           color={$queuePanelOpen ? 'var(--accent-primary)' : 'var(--text-secondary)'}
         />
-      </GlassButton>
+      </Button>
 
       <div class="volume-control">
-        <GlassButton variant="icon" size="xs" title={isMuted ? 'Unmute' : 'Mute'} onclick={toggleMute}>
+        <Button variant="icon" size="xs" title={isMuted ? 'Unmute' : 'Mute'} onclick={toggleMute}>
           <Icon name={getVolumeIcon()} size={15} />
-        </GlassButton>
+        </Button>
         <div class="volume-slider">
-          <GlassSlider
+          <Slider
             bind:value={volumeValue}
             min={0}
             max={100}
@@ -260,8 +260,7 @@
   .player-bar {
     height: var(--player-bar-height);
     background: hsla(225, 15%, 8%, 0.95);
-    backdrop-filter: blur(32px) saturate(1.8);
-    -webkit-backdrop-filter: blur(32px) saturate(1.8);
+
     border-top: 1px solid var(--glass-border);
     position: relative;
     z-index: var(--z-sticky);
