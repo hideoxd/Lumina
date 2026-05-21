@@ -34,16 +34,20 @@ export async function updateTrackMetadata(
     artwork_path?: string;
   },
 ): Promise<void> {
-  // Convert string numeric fields to actual numbers for the DB layer
+  function parseNum(val: string): number | null {
+    const n = parseInt(val, 10);
+    return Number.isFinite(n) ? n : null;
+  }
+
   const dbFields: Record<string, unknown> = {};
   if (fields.title !== undefined) dbFields.title = fields.title;
   if (fields.artist !== undefined) dbFields.artist = fields.artist;
   if (fields.album !== undefined) dbFields.album = fields.album;
   if (fields.album_artist !== undefined) dbFields.album_artist = fields.album_artist;
   if (fields.genre !== undefined) dbFields.genre = fields.genre;
-  if (fields.year !== undefined) dbFields.year = fields.year ? parseInt(fields.year, 10) || null : null;
-  if (fields.track_number !== undefined) dbFields.track_number = fields.track_number ? parseInt(fields.track_number, 10) || null : null;
-  if (fields.disc_number !== undefined) dbFields.disc_number = fields.disc_number ? parseInt(fields.disc_number, 10) || null : null;
+  if (fields.year !== undefined) dbFields.year = fields.year === '' ? null : parseNum(fields.year);
+  if (fields.track_number !== undefined) dbFields.track_number = fields.track_number === '' ? null : parseNum(fields.track_number);
+  if (fields.disc_number !== undefined) dbFields.disc_number = fields.disc_number === '' ? null : parseNum(fields.disc_number);
   if (fields.composer !== undefined) dbFields.composer = fields.composer;
   if (fields.publisher !== undefined) dbFields.publisher = fields.publisher;
   if (fields.comments !== undefined) dbFields.comments = fields.comments;

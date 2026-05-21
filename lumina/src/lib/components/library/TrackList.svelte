@@ -71,9 +71,7 @@
   }
 
   function playNextTrack(track: Track) {
-    import('$lib/stores/queue').then(({ addToQueueNext }) => {
-      addToQueueNext(track);
-    });
+    addToQueueNext(track);
   }
 
   function getContextMenuItems(track: Track, index: number): MenuItem[] {
@@ -87,10 +85,7 @@
       { id: 'divider2', divider: true },
       { id: 'remove', label: 'Remove from Library', icon: 'x', danger: true,
         onclick: () => {
-          // Remove from the visible list by patching
-          import('$lib/stores/library').then(({ removeTrack }) => {
-            removeTrack(track.id);
-          });
+          removeTrack(track.id);
         } },
     ];
 

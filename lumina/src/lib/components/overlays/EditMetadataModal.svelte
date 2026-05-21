@@ -25,6 +25,11 @@
 
   let saving = $state(false);
 
+  function parseNum(val: string): number | null {
+    const n = parseInt(val, 10);
+    return Number.isFinite(n) ? n : null;
+  }
+
   $effect(() => {
     if (track && open) {
       title = track.title;
@@ -63,15 +68,16 @@
       console.log('[Lumina] Saving metadata for track:', track.id, payload);
       await updateTrackMetadata(track.id, payload);
       console.log('[Lumina] Metadata saved successfully');
+
       patchTrack(track.id, {
         title,
         artist,
         album,
         album_artist: albumArtist || null,
         genre: genre || null,
-        year: year ? parseInt(year, 10) : null,
-        track_number: trackNumber ? parseInt(trackNumber, 10) : null,
-        disc_number: discNumber ? parseInt(discNumber, 10) : null,
+        year: year === '' ? null : parseNum(year),
+        track_number: trackNumber === '' ? null : parseNum(trackNumber),
+        disc_number: discNumber === '' ? null : parseNum(discNumber),
         composer: composer || null,
         publisher: publisher || null,
         comments: comments || null,
@@ -268,10 +274,12 @@
   .glass-input[type="number"]::-webkit-inner-spin-button,
   .glass-input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
+    appearance: none;
     margin: 0;
   }
   .glass-input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   .glass-textarea {

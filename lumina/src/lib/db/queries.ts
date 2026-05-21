@@ -195,9 +195,9 @@ export async function updateTrackMetadata(
   if (entries.length === 0) return;
 
   const setClauses = entries.map(([k]) => `${k} = $${k}`).join(', ');
-  const params: Record<string, unknown> = { $id: trackId };
+  const params: Record<string, string | number | null> = { $id: trackId };
   for (const [k, v] of entries) {
-    params[`$${k}`] = v;
+    if (v !== undefined) params[`$${k}`] = v as string | number | null;
   }
 
   const db = await getDb();
