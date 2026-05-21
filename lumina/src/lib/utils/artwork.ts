@@ -1,20 +1,19 @@
-import { appDataDir, join } from '@tauri-apps/api/path';
-import { convertFileSrc } from '@tauri-apps/api/core';
-
-let cachedAppDataDir: string | null = null;
-
-async function getAppDataDirCached(): Promise<string> {
-  if (cachedAppDataDir) return cachedAppDataDir;
-  cachedAppDataDir = await appDataDir();
-  return cachedAppDataDir;
-}
-
 /**
- * Converts an artwork filename stored by the Rust backend into a safe URL usable in <img src>.
- * The backend currently stores only the filename under {appDataDir}/artworks/.
+ * In browser mode, artwork_path stores either:
+ * 1. A base64 data URL (e.g., "data:image/jpeg;base64,...")
+ * 2. A blob URL (e.g., "blob:...")
+ * 3. A plain filename (legacy, from Tauri mode)
+ * 
+ * This function normalizes them all to a usable URL for <img src>.
  */
-export async function getArtworkUrl(filename: string): Promise<string> {
-  const dir = await getAppDataDirCached();
-  const fullPath = await join(dir, 'artworks', filename);
-  return convertFileSrc(fullPath);
+export async function getArtworkUrl(artworkPath: string): Promise<string> {
+  if (!artworkPath) return '';
+  
+  // Already a data URL or blob URL — use as-is
+  if (artworkPath.startsWith('data:') || artworkPath.startsWith('blob:')) {
+    return artworkPath;
+  }
+  
+  // For legacy Tauri-stored filenames, return empty (can't resolve without Tauri)
+  return '';
 }

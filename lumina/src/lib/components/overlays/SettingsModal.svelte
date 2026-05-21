@@ -22,10 +22,6 @@
 
   import { ambientEnabled, glassEffectsEnabled, lastWindowSize, miniPlayerMode, settingsOpen } from '$lib/stores/ui';
 
-  import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
-
-  const appWindow = getCurrentWindow();
-
   function close() {
     settingsOpen.set(false);
   }
@@ -33,17 +29,8 @@
   async function toggleMiniPlayer(checked: boolean) {
     if (checked) {
       settingsOpen.set(false);
-      try {
-        const size = await appWindow.innerSize();
-        lastWindowSize.set({ width: size.width, height: size.height });
-      } catch {}
-
-      await appWindow.setAlwaysOnTop(true);
-      await appWindow.setSize(new LogicalSize(420, 140));
       miniPlayerMode.set(true);
     } else {
-      await appWindow.setAlwaysOnTop(false);
-      await appWindow.setSize(new LogicalSize($lastWindowSize.width, $lastWindowSize.height));
       miniPlayerMode.set(false);
     }
   }

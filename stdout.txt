@@ -1,0 +1,22 @@
+
+> lumina@0.1.0 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: c:\Users\teche\OneDrive\Documents\projects\oooo\lumina
+Getting Svelte diagnostics...
+
+c:\Users\teche\OneDrive\Documents\projects\oooo\lumina\[32msrc\lib\components\overlays\EditMetadataModal.svelte[39m:270:5
+[33mWarn[39m: Also define the standard property 'appearance' for compatibility (css)
+[36m  .glass-input[type="number"] {
+    [35m-moz-appearance[36m: textfield;
+  }[39m
+
+c:\Users\teche\OneDrive\Documents\projects\oooo\lumina\[32mtsconfig.json[39m:1:1
+[33mWarn[39m: Cannot find type definition file for 'node'.
+  The file is in the program because:
+    Entry point of type library 'node' specified in compilerOptions 
+[36m[39m
+
+====================================
+[33msvelte-check found 0 errors and 2 warnings in 2 files
+[39m

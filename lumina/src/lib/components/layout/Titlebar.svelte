@@ -1,25 +1,8 @@
 <script lang="ts">
-  import { getCurrentWindow } from '@tauri-apps/api/window';
   import Icon from '$lib/components/Icon.svelte';
   import { searchQuery, searchFocused } from '$lib/stores/ui';
 
-  let isMaximized = $state(false);
   let searchInputEl: HTMLInputElement;
-
-  const appWindow = getCurrentWindow();
-
-  async function handleMinimize() {
-    await appWindow.minimize();
-  }
-
-  async function handleMaximize() {
-    await appWindow.toggleMaximize();
-    isMaximized = !isMaximized;
-  }
-
-  async function handleClose() {
-    await appWindow.close();
-  }
 
   function handleSearchKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -38,8 +21,10 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<header class="titlebar" data-tauri-drag-region>
-  <div class="titlebar-left" data-tauri-drag-region></div>
+<header class="titlebar">
+  <div class="titlebar-left">
+    <span class="app-brand">Lumina</span>
+  </div>
 
   <div class="titlebar-center">
     <div class="search-box" class:focused={$searchFocused}>
@@ -62,19 +47,7 @@
     </div>
   </div>
 
-  <div class="titlebar-right">
-    <div class="window-controls">
-      <button class="win-btn" onclick={handleMinimize} title="Minimize">
-        <Icon name="minus" size={14} />
-      </button>
-      <button class="win-btn" onclick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
-        <Icon name="maximize" size={11} />
-      </button>
-      <button class="win-btn win-close" onclick={handleClose} title="Close">
-        <Icon name="x" size={14} />
-      </button>
-    </div>
-  </div>
+  <div class="titlebar-right"></div>
 </header>
 
 <style>
@@ -83,22 +56,33 @@
     align-items: center;
     justify-content: space-between;
     height: 48px;
-    padding: 0 8px 0 16px;
+    padding: 0 16px;
     background: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    -webkit-app-region: drag;
     position: relative;
     z-index: 100;
   }
 
   .titlebar-left {
     min-width: 80px;
+    display: flex;
+    align-items: center;
+  }
+
+  .app-brand {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .titlebar-center {
     flex: 1;
     max-width: 320px;
-    -webkit-app-region: no-drag;
   }
 
   .search-box {
@@ -125,7 +109,6 @@
     outline: none;
     font-size: 13px;
     color: var(--text-primary);
-    -webkit-app-region: no-drag;
   }
 
   .search-input::placeholder {
@@ -150,34 +133,5 @@
     align-items: center;
     justify-content: flex-end;
     min-width: 120px;
-    -webkit-app-region: no-drag;
-  }
-
-  .window-controls {
-    display: flex;
-    align-items: center;
-  }
-
-  .win-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 48px;
-    color: var(--text-tertiary);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.1s;
-  }
-
-  .win-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-primary);
-  }
-
-  .win-close:hover {
-    background: rgba(220, 38, 38, 0.8);
-    color: white;
   }
 </style>

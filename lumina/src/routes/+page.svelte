@@ -22,7 +22,6 @@
   import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback, queueState } from '$lib/stores/queue';
   import { currentTrack, isPlaying, volume, formatTime } from '$lib/stores/player';
   import { getArtworkUrl } from '$lib/utils/artwork';
-  import { getCurrentWindow, LogicalSize } from '@tauri-apps/api/window';
   import type { Track } from '$lib/types';
 
   // Reactive sidebar width for grid
@@ -33,11 +32,6 @@
   );
 
   onMount(async () => {
-    try {
-      const win = getCurrentWindow();
-      const size = await win.innerSize();
-      lastWindowSize.set({ width: size.width, height: size.height });
-    } catch {}
     void initLibraryListeners();
     void refreshTracks();
     void refreshPlaylists();
@@ -68,12 +62,6 @@
 
   async function exitMiniPlayer() {
     miniPlayerMode.set(false);
-    try {
-      const win = getCurrentWindow();
-      await win.setAlwaysOnTop(false);
-      await win.setSize(new LogicalSize($lastWindowSize.width, $lastWindowSize.height));
-      await win.center();
-    } catch {}
   }
 
   $effect(() => {

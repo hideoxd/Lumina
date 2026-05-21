@@ -1,20 +1,20 @@
-import { invoke } from '@tauri-apps/api/core';
-import type { Track, Playlist } from '../types';
+import type { Track, Playlist } from '$lib/types';
+import * as db from '$lib/db/queries';
 
-export async function scanDirectory(path: string): Promise<void> {
-  return invoke('scan_directory', { path });
+export async function scanDirectory(_path: string): Promise<void> {
+  // In browser mode, scanning is handled by the scanner module directly.
 }
 
 export async function getAllTracks(): Promise<Track[]> {
-  return invoke('get_all_tracks');
+  return db.getAllTracks();
 }
 
 export async function setTrackFavorite(trackId: string, favorite: boolean): Promise<void> {
-  return invoke('set_track_favorite', { track_id: trackId, favorite });
+  return db.setTrackFavorite(trackId, favorite);
 }
 
 export async function markTrackPlayed(trackId: string): Promise<void> {
-  return invoke('mark_track_played', { track_id: trackId });
+  return db.markTrackPlayed(trackId);
 }
 
 export async function updateTrackMetadata(
@@ -34,75 +34,90 @@ export async function updateTrackMetadata(
     artwork_path?: string;
   },
 ): Promise<void> {
-  return invoke('edit_track_metadata', {
-    track_id: trackId,
-    title: fields.title !== undefined ? fields.title : null,
-    artist: fields.artist !== undefined ? fields.artist : null,
-    album: fields.album !== undefined ? fields.album : null,
-    album_artist: fields.album_artist !== undefined ? fields.album_artist : null,
-    genre: fields.genre !== undefined ? fields.genre : null,
-    year: fields.year !== undefined ? fields.year : null,
-    track_number: fields.track_number !== undefined ? fields.track_number : null,
-    disc_number: fields.disc_number !== undefined ? fields.disc_number : null,
-    composer: fields.composer !== undefined ? fields.composer : null,
-    publisher: fields.publisher !== undefined ? fields.publisher : null,
-    comments: fields.comments !== undefined ? fields.comments : null,
-    artwork_path: fields.artwork_path !== undefined ? fields.artwork_path : null,
-  });
+  // Convert string numeric fields to actual numbers for the DB layer
+  const dbFields: Record<string, unknown> = {};
+  if (fields.title !== undefined) dbFields.title = fields.title;
+  if (fields.artist !== undefined) dbFields.artist = fields.artist;
+  if (fields.album !== undefined) dbFields.album = fields.album;
+  if (fields.album_artist !== undefined) dbFields.album_artist = fields.album_artist;
+  if (fields.genre !== undefined) dbFields.genre = fields.genre;
+  if (fields.year !== undefined) dbFields.year = fields.year ? parseInt(fields.year, 10) || null : null;
+  if (fields.track_number !== undefined) dbFields.track_number = fields.track_number ? parseInt(fields.track_number, 10) || null : null;
+  if (fields.disc_number !== undefined) dbFields.disc_number = fields.disc_number ? parseInt(fields.disc_number, 10) || null : null;
+  if (fields.composer !== undefined) dbFields.composer = fields.composer;
+  if (fields.publisher !== undefined) dbFields.publisher = fields.publisher;
+  if (fields.comments !== undefined) dbFields.comments = fields.comments;
+  if (fields.artwork_path !== undefined) dbFields.artwork_path = fields.artwork_path;
+
+  return db.updateTrackMetadata(trackId, dbFields);
 }
 
 export async function getFavoriteTracks(): Promise<Track[]> {
-  return invoke('get_favorite_tracks');
+  return db.getFavoriteTracks();
 }
 
 export async function getRecentTracks(limit?: number): Promise<Track[]> {
-  return invoke('get_recent_tracks', { limit });
+  return db.getRecentTracks(limit ?? 50);
 }
 
 export async function searchTracks(query: string): Promise<Track[]> {
-  return invoke('search_tracks', { query });
+  return db.searchTracks(query);
 }
 
 // ── Playlists ──
 
 export async function createPlaylist(name: string, description?: string): Promise<Playlist> {
-  return invoke('create_playlist', { name, description });
+  const now = new Date().toISOString();
+  const id = crypto.randomUUID();
+  const playlist: Playlist = {
+    id,
+    name,
+    description: description ?? '',
+    artwork_path: null,
+    track_count: 0,
+    total_duration: 0,
+    created_at: now,
+    updated_at: now,
+    is_smart: false,
+    smart_rules: null,
+  };
+  await db.createPlaylist(playlist);
+  return playlist;
 }
 
 export async function getAllPlaylists(): Promise<Playlist[]> {
-  return invoke('get_all_playlists');
+  return db.getAllPlaylists();
 }
 
 export async function getPlaylist(playlistId: string): Promise<Playlist | null> {
-  return invoke('get_playlist', { playlist_id: playlistId });
+  return db.getPlaylist(playlistId);
 }
 
 export async function renamePlaylist(playlistId: string, name: string): Promise<void> {
-  return invoke('rename_playlist', { playlist_id: playlistId, name });
+  const existing = await db.getPlaylist(playlistId);
+  if (!existing) throw new Error('Playlist not found');
+  existing.name = name;
+  existing.updated_at = new Date().toISOString();
+  await db.updatePlaylist(existing);
 }
 
 export async function deletePlaylist(playlistId: string): Promise<void> {
-  return invoke('delete_playlist', { playlist_id: playlistId });
+  return db.deletePlaylist(playlistId);
 }
 
 export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
-  return invoke('get_playlist_tracks', { playlist_id: playlistId });
+  return db.getPlaylistTracks(playlistId);
 }
 
 export async function addTrackToPlaylist(playlistId: string, trackId: string): Promise<void> {
-  return invoke('add_track_to_playlist', { playlist_id: playlistId, track_id: trackId });
+  return db.addTrackToPlaylist(playlistId, trackId);
 }
 
 export async function removeTrackFromPlaylist(playlistId: string, trackId: string): Promise<void> {
-  return invoke('remove_track_from_playlist', { playlist_id: playlistId, track_id: trackId });
+  return db.removeTrackFromPlaylist(playlistId, trackId);
 }
 
-// ── Folder Watch ──
+// ── Folder Watch (no-op in browser) ──
 
-export async function watchDirectory(path: string): Promise<void> {
-  return invoke('watch_directory', { path });
-}
-
-export async function unwatchDirectory(path: string): Promise<void> {
-  return invoke('unwatch_directory', { path });
-}
+export async function watchDirectory(_path: string): Promise<void> {}
+export async function unwatchDirectory(_path: string): Promise<void> {}

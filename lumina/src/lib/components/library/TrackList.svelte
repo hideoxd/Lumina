@@ -5,7 +5,9 @@
   import { getArtworkUrl } from '$lib/utils/artwork';
   import { setTrackFavorite } from '$lib/commands/library';
   import { patchTrack } from '$lib/stores/library';
+  import { removeTrack } from '$lib/stores/library';
   import { setQueue, playQueueIndex } from '$lib/stores/queue';
+  import { addToQueueNext } from '$lib/stores/queue';
   import { playlists, refreshPlaylists } from '$lib/stores/playlists';
   import { addTrackToPlaylist, removeTrackFromPlaylist } from '$lib/commands/library';
   import EditMetadataModal from '$lib/components/overlays/EditMetadataModal.svelte';

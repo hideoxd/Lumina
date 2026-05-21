@@ -4,8 +4,6 @@
   import { updateTrackMetadata } from '$lib/commands/library';
   import { patchTrack } from '$lib/stores/library';
   import type { Track } from '$lib/types';
-  import { open as openDialog } from '@tauri-apps/plugin-dialog';
-
   let {
     track,
     open,
@@ -89,15 +87,21 @@
   }
 
   async function handleSelectImage() {
-    const file = await openDialog({
-      multiple: false,
-      filters: [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
-    });
-    if (file && typeof file === 'string') {
-      artworkPath = file;
-    } else if (file && typeof file === 'object' && 'path' in file) {
-      artworkPath = (file as any).path;
-    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png, image/jpeg, image/webp';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          artworkPath = reader.result;
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
   }
 </script>
 
@@ -107,9 +111,9 @@
       <div class="field-row">
         <div class="field art-picker">
           <label class="field-label" for="cover-image">Cover Image</label>
-          <button id="cover-image" class="art-btn" onclick={handleSelectImage} title={artworkPath || 'No image'}>
+          <button id="cover-image" class="art-btn" onclick={handleSelectImage} title={artworkPath ? 'Change image' : 'No image'}>
             {#if artworkPath}
-              <span class="art-path truncate">{artworkPath.split(/[/\\]/).pop()}</span>
+              <span class="art-path truncate">{artworkPath.startsWith('data:') ? '✓ Image selected' : artworkPath.split(/[/\\]/).pop()}</span>
             {:else}
               Select Image
             {/if}
