@@ -93,6 +93,11 @@ export async function togglePlayPause(): Promise<void> {
   } else {
     // If we have a current track but stopped, re-play file to ensure audio resumes.
     if (ps.isStopped) {
+      if (!current.file_path.startsWith('youtube:')) {
+        const { ensureFolderPermissionAtClick } = await import('$lib/controllers/library');
+        const ok = await ensureFolderPermissionAtClick();
+        if (!ok) return;
+      }
       await playFile(current.file_path);
     } else {
       await resumeAudio();

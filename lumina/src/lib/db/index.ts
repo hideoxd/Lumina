@@ -89,8 +89,8 @@ function loadFromStorage(): Uint8Array | null {
 
 function persistToStorage(database: Database): void {
   try {
-    const data = database.export();
-    const binary = Array.from(data, (b) => String.fromCharCode(b)).join('');
+    const data = database.export() as Uint8Array;
+    const binary = Array.from(data, (b: number) => String.fromCharCode(b)).join('');
     localStorage.setItem(DB_STORAGE_KEY, btoa(binary));
   } catch {
     console.warn('[lumina-db] Failed to persist database to localStorage');

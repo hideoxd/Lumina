@@ -1,6 +1,7 @@
+import { get } from 'svelte/store';
 import { getAllTracks } from '$lib/commands/library';
 import { libraryLoading, scanProgress, tracks, folderPermissionState } from '$lib/stores/library';
-import { pickMusicFolder, scanDirectoryHandle, getStoredDirectoryHandle, setLastDirectoryHandle } from '$lib/scanner';
+import { pickMusicFolder, scanDirectoryHandle, getStoredDirectoryHandle, setLastDirectoryHandle, lastDirectoryHandle } from '$lib/scanner';
 import * as db from '$lib/db/queries';
 import type { Track } from '$lib/types';
 
@@ -95,9 +96,10 @@ export async function checkFolderPermission(): Promise<void> {
   try {
     const dirHandle = await getStoredDirectoryHandle();
     if (dirHandle) {
-      const permission = await dirHandle.queryPermission({ mode: 'read' });
+      // ALWAYS set the in-memory lastDirectoryHandle on boot so it is ready for click permission gestures!
+      setLastDirectoryHandle(dirHandle);
+      const permission = await (dirHandle as any).queryPermission({ mode: 'read' });
       if (permission === 'granted') {
-        setLastDirectoryHandle(dirHandle);
         folderPermissionState.set('granted');
       } else {
         folderPermissionState.set('stored_needs_permission');
@@ -114,10 +116,10 @@ export async function checkFolderPermission(): Promise<void> {
 /** Explicitly prompt the browser to request permission for the stored folder handle */
 export async function requestFolderPermission(): Promise<boolean> {
   try {
-    const dirHandle = await getStoredDirectoryHandle();
+    const dirHandle = lastDirectoryHandle ?? (await getStoredDirectoryHandle());
     if (!dirHandle) return false;
 
-    const permission = await dirHandle.requestPermission({ mode: 'read' });
+    const permission = await (dirHandle as any).requestPermission({ mode: 'read' });
     if (permission === 'granted') {
       setLastDirectoryHandle(dirHandle);
       folderPermissionState.set('granted');
@@ -128,4 +130,29 @@ export async function requestFolderPermission(): Promise<boolean> {
     console.error('[lumina] Permission prompt failed:', err);
     return false;
   }
+}
+
+/**
+ * Prompts the user for folder permission immediately using the cached directory handle.
+ * This should be called directly inside a click handler to preserve the browser user gesture.
+ */
+export async function ensureFolderPermissionAtClick(): Promise<boolean> {
+  const state = get(folderPermissionState);
+  if (state === 'granted') return true;
+
+  try {
+    // Grab the synchronously cached lastDirectoryHandle to guarantee no async boundary ticks are incurred.
+    const dirHandle = lastDirectoryHandle ?? (await getStoredDirectoryHandle());
+    if (dirHandle) {
+      const permission = await (dirHandle as any).requestPermission({ mode: 'read' });
+      if (permission === 'granted') {
+        setLastDirectoryHandle(dirHandle);
+        folderPermissionState.set('granted');
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('[lumina] Click-time folder permission request failed:', err);
+  }
+  return false;
 }

@@ -135,8 +135,11 @@ function parseNumericTag(value: unknown): number | null {
 
 /* ── Persistence & Handle Helpers ─────────────────────────── */
 
+let cachedDirectoryHandle: FileSystemDirectoryHandle | null = null;
+
 /** Save directory handle to IndexedDB for cross-session persistence */
 export async function saveStoredDirectoryHandle(handle: FileSystemDirectoryHandle): Promise<void> {
+  cachedDirectoryHandle = handle;
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('lumina_handles', 1);
     request.onupgradeneeded = () => {
@@ -157,6 +160,7 @@ export async function saveStoredDirectoryHandle(handle: FileSystemDirectoryHandl
 
 /** Retrieve directory handle from IndexedDB */
 export async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+  if (cachedDirectoryHandle) return cachedDirectoryHandle;
   return new Promise((resolve) => {
     const request = indexedDB.open('lumina_handles', 1);
     request.onupgradeneeded = () => {
@@ -168,7 +172,10 @@ export async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHan
       const tx = db.transaction('handles', 'readonly');
       const store = tx.objectStore('handles');
       const getReq = store.get('music_folder');
-      getReq.onsuccess = () => resolve(getReq.result || null);
+      getReq.onsuccess = () => {
+        cachedDirectoryHandle = getReq.result || null;
+        resolve(cachedDirectoryHandle);
+      };
       getReq.onerror = () => resolve(null);
     };
     request.onerror = () => resolve(null);
@@ -178,6 +185,9 @@ export async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHan
 /** Expose a setter to let other modules assign lastDirectoryHandle on boot */
 export function setLastDirectoryHandle(handle: FileSystemDirectoryHandle | null) {
   lastDirectoryHandle = handle;
+  if (handle) {
+    cachedDirectoryHandle = handle;
+  }
 }
 
 /* ── Public API ───────────────────────────────────────────── */
@@ -229,17 +239,32 @@ export async function scanDirectoryHandle(
   const tracks: ScannedTrack[] = [];
   const now = new Date().toISOString();
 
+  // Load existing tracks to prevent scan duplicates
+  let existingPaths = new Set<string>();
+  try {
+    const { getAllTracks } = await import('$lib/db/queries');
+    const existingTracks = await getAllTracks();
+    existingPaths = new Set(existingTracks.map((t) => t.file_path));
+  } catch (e) {
+    console.warn('[lumina-scanner] Could not load existing tracks for de-duplication:', e);
+  }
+
   // Phase 2 — read metadata for every discovered file
   for (let i = 0; i < entries.length; i++) {
     const { handle, path } = entries[i];
     onProgress?.(i + 1, total);
 
     try {
-      const file = await handle.getFile();
-      const ext = extensionOf(file.name);
-
       // Store handle for future playback
       fileHandleStore.set(path, handle);
+
+      // Skip parsing and inserting if it already exists in library
+      if (existingPaths.has(path)) {
+        continue;
+      }
+
+      const file = await handle.getFile();
+      const ext = extensionOf(file.name);
 
       // Read ID3/Vorbis/etc. tags
       const tag = await readTags(file);
@@ -295,6 +320,41 @@ export async function scanDirectoryHandle(
  * needed (the audio engine handles this automatically).
  */
 export async function getFileUrlForTrack(filePath: string): Promise<string> {
+  if (filePath.startsWith('youtube:')) {
+    return filePath;
+  }
+
+  // On-the-fly permission check and request!
+  try {
+    const { folderPermissionState } = await import('$lib/stores/library');
+    let hasPermission = false;
+    folderPermissionState.subscribe((val) => {
+      hasPermission = val === 'granted';
+    })();
+
+    if (!hasPermission) {
+      const dirHandle = lastDirectoryHandle ?? (await getStoredDirectoryHandle());
+      if (dirHandle) {
+        const permission = await (dirHandle as any).queryPermission({ mode: 'read' });
+        if (permission !== 'granted') {
+          console.log('[lumina-scanner] Permission not granted. Prompting user on-the-fly...');
+          const newPermission = await (dirHandle as any).requestPermission({ mode: 'read' });
+          if (newPermission === 'granted') {
+            setLastDirectoryHandle(dirHandle);
+            folderPermissionState.set('granted');
+          } else {
+            throw new Error('Permission denied by user');
+          }
+        } else {
+          setLastDirectoryHandle(dirHandle);
+          folderPermissionState.set('granted');
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[lumina-scanner] On-the-fly permission validation/prompt failed:', err);
+  }
+
   let handle = fileHandleStore.get(filePath);
 
   if (!handle) {
@@ -323,7 +383,7 @@ export async function getFileUrlForTrack(filePath: string): Promise<string> {
   }
 
   if (!handle) {
-    throw new Error(`Permission Denied: Cannot access "${filePath}". Please grant access to your Music Folder using the banner.`);
+    throw new Error(`Permission Denied: Cannot access "${filePath}". Please grant access to your Music Folder.`);
   }
 
   const file = await handle.getFile();

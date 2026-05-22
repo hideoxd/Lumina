@@ -18,7 +18,8 @@
   const navItems = [
     { id: 'tracks', label: 'All Tracks', icon: 'music', view: 'tracks' as ViewMode },
     { id: 'albums', label: 'Albums', icon: 'disc', view: 'albums' as ViewMode },
-    { id: 'artists', label: 'Artists', icon: 'users', view: 'artists' as ViewMode }
+    { id: 'artists', label: 'Artists', icon: 'users', view: 'artists' as ViewMode },
+    { id: 'youtube', label: 'YouTube Search', icon: 'youtube', view: 'youtube' as ViewMode }
   ];
 </script>
 

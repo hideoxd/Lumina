@@ -4,6 +4,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Slider from '$lib/components/ui/Slider.svelte';
   import Toggle from '$lib/components/ui/Toggle.svelte';
+  import { youtubeApiKeyStore } from '$lib/stores/api';
 
   import {
     activeTheme,
@@ -209,6 +210,21 @@
           label="Mini player mode"
           description="Shrinks the window and sets Always-on-top."
           onchange={(v) => void toggleMiniPlayer(v)}
+        />
+      </div>
+    </Card>
+
+    <Card padding="lg" radius="xl">
+      <h3 class="section">YouTube Integration</h3>
+      <p class="hint">Masked YouTube API key for searching and streaming songs. Stored securely in your browser.</p>
+
+      <div class="control" style="margin-top: 8px;">
+        <div class="label" style="margin-bottom: 6px;">API Key</div>
+        <input
+          type="password"
+          style="width: 100%; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 13px; outline: none; transition: border-color 0.2s ease;"
+          placeholder="Enter your secret YouTube API Key (AIzaSy...)"
+          bind:value={$youtubeApiKeyStore}
         />
       </div>
     </Card>

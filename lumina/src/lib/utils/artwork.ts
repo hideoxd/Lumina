@@ -9,8 +9,8 @@
 export async function getArtworkUrl(artworkPath: string): Promise<string> {
   if (!artworkPath) return '';
   
-  // Already a data URL or blob URL — use as-is
-  if (artworkPath.startsWith('data:') || artworkPath.startsWith('blob:')) {
+  // Already a data URL, blob URL, or web URL — use as-is
+  if (artworkPath.startsWith('data:') || artworkPath.startsWith('blob:') || artworkPath.startsWith('http:') || artworkPath.startsWith('https:')) {
     return artworkPath;
   }
   
