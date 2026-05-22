@@ -1,47 +1,24 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
 
   let reloading = $state(false);
-  let countdown = $state(5);
-  let autoRedirect = $state(true);
 
   function handleReload() {
     reloading = true;
-    // Use SvelteKit navigation instead of hard reload to avoid losing state
-    goto('/', { replaceState: true, invalidateAll: true }).catch(() => {
-      // Fallback to hard reload if SvelteKit navigation fails
-      window.location.href = '/';
-    });
+    window.location.href = '/';
   }
-
-  onMount(() => {
-    // Auto-redirect to dashboard after countdown
-    const interval = setInterval(() => {
-      if (!autoRedirect) return;
-      countdown -= 1;
-      if (countdown <= 0) {
-        clearInterval(interval);
-        handleReload();
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  });
 </script>
 
 <div class="error-page">
   <div class="error-card">
     <h1>Something went wrong</h1>
     <p>The app encountered an issue while loading.</p>
-    <button class="btn-primary" onclick={handleReload} disabled={reloading}>
-      {reloading ? 'Reloading...' : `Reload App${autoRedirect ? ` (${countdown}s)` : ''}`}
-    </button>
-    {#if !reloading}
-      <button class="btn-link" onclick={() => { autoRedirect = false; }}>
-        Cancel auto-reload
-      </button>
+    {#if $page?.error?.message}
+      <pre class="error-detail">{$page.error.message}</pre>
     {/if}
+    <button class="btn-primary" onclick={handleReload} disabled={reloading}>
+      {reloading ? 'Reloading...' : 'Reload App'}
+    </button>
   </div>
 </div>
 
@@ -74,7 +51,22 @@
   p {
     font-size: 14px;
     color: #888;
-    margin: 0 0 32px 0;
+    margin: 0 0 24px 0;
+  }
+  .error-detail {
+    text-align: left;
+    font-size: 11px;
+    color: #f87171;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 0 0 24px 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 150px;
+    overflow-y: auto;
   }
   .btn-primary {
     padding: 10px 24px;
@@ -94,18 +86,5 @@
   .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-  .btn-link {
-    display: block;
-    margin-top: 16px;
-    background: none;
-    border: none;
-    color: #666;
-    font-size: 12px;
-    cursor: pointer;
-    text-decoration: underline;
-  }
-  .btn-link:hover {
-    color: #999;
   }
 </style>

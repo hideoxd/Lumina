@@ -2,7 +2,13 @@
    Lumina — sql.js Database Initialisation & Persistence
    ============================================================ */
 
-import initSqlJs, { type Database } from 'sql.js';
+import * as _sqljs from 'sql.js';
+
+// Handle CJS/ESM interop: sql.js may expose initSqlJs as default or directly
+const initSqlJs = ((_sqljs as any).default ?? _sqljs) as (config?: Record<string, unknown>) => Promise<any>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Database = any;
 
 const DB_STORAGE_KEY = 'lumina_db';
 

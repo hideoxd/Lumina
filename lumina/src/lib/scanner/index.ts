@@ -4,8 +4,22 @@
    jsmediatags to extract audio metadata in the browser.
    ============================================================ */
 
-import jsmediatags from 'jsmediatags';
-import type { TagType, PictureType } from 'jsmediatags/types';
+import * as _jsmediatags from 'jsmediatags';
+
+// Handle CJS/UMD default export interop: the module might expose
+// { read, Reader, Config } directly or under a .default property.
+const jsmediatags = (_jsmediatags as any).default ?? _jsmediatags;
+
+/* ── jsmediatags types (inlined to avoid subpath import issues) ── */
+interface PictureType {
+  format: string;
+  data: number[];
+}
+
+interface TagType {
+  type: string;
+  tags: Record<string, unknown> & { picture?: PictureType };
+}
 
 /* ── Constants ────────────────────────────────────────────── */
 
