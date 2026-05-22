@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="luminaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#888888"/>
+    </linearGradient>
+    <linearGradient id="luminaGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#555555"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer ring -->
+  <circle cx="64" cy="64" r="60" stroke="url(#luminaGrad)" stroke-width="1.5" opacity="0.2"/>
+  <!-- Middle ring -->
+  <circle cx="64" cy="64" r="46" stroke="url(#luminaGrad)" stroke-width="1.5" opacity="0.35"/>
+  <!-- Inner circle -->
+  <circle cx="64" cy="64" r="30" fill="url(#luminaGrad)" opacity="0.9"/>
+  <!-- Play triangle -->
+  <path d="M55 48L80 64L55 80Z" fill="#000000" opacity="0.95"/>
+  <!-- Small decorative dots -->
+  <circle cx="64" cy="8" r="2" fill="url(#luminaGrad)" opacity="0.4"/>
+  <circle cx="64" cy="120" r="2" fill="url(#luminaGrad)" opacity="0.4"/>
+  <circle cx="8" cy="64" r="2" fill="url(#luminaGrad)" opacity="0.4"/>
+  <circle cx="120" cy="64" r="2" fill="url(#luminaGrad)" opacity="0.4"/>
+</svg>

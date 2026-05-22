@@ -29,25 +29,34 @@
   <div class="splash-screen">
     <div class="splash-logo">
       <div class="splash-icon">
-        <svg width="72" height="72" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="80" height="80" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="var(--accent-primary)" />
               <stop offset="100%" stop-color="var(--accent-secondary)" />
             </linearGradient>
-
+            <linearGradient id="splashGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--accent-primary)" />
+              <stop offset="100%" stop-color="#666666" />
+            </linearGradient>
           </defs>
           <!-- Outer ring -->
-          <circle cx="32" cy="32" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.3" />
+          <circle cx="64" cy="64" r="60" stroke="url(#splashGrad)" stroke-width="1.5" opacity="0.2" />
           <!-- Middle ring -->
-          <circle cx="32" cy="32" r="20" stroke="url(#logoGrad)" stroke-width="1.5" fill="none" opacity="0.5" />
-          <!-- Inner circle -->
-          <circle cx="32" cy="32" r="14" fill="url(#logoGrad)" opacity="0.8" />
+          <circle cx="64" cy="64" r="46" stroke="url(#splashGrad)" stroke-width="1.5" opacity="0.35" />
+          <!-- Inner filled circle -->
+          <circle cx="64" cy="64" r="30" fill="url(#splashGrad)" opacity="0.9" />
           <!-- Play triangle -->
-          <path d="M27 23L42 32L27 41Z" fill="white" opacity="0.9" />
+          <path d="M55 48L80 64L55 80Z" fill="var(--bg-primary)" opacity="0.95" />
+          <!-- Ambient decoration dots -->
+          <circle cx="64" cy="14" r="2.5" fill="url(#splashGrad2)" opacity="0.3" />
+          <circle cx="64" cy="114" r="2.5" fill="url(#splashGrad2)" opacity="0.3" />
+          <circle cx="14" cy="64" r="2.5" fill="url(#splashGrad2)" opacity="0.3" />
+          <circle cx="114" cy="64" r="2.5" fill="url(#splashGrad2)" opacity="0.3" />
         </svg>
       </div>
       <span class="splash-text">Lumina</span>
+      <span class="splash-tagline">Your music, illuminated.</span>
     </div>
   </div>
 {/if}
@@ -78,7 +87,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -95,5 +104,14 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .splash-tagline {
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin-top: -4px;
   }
 </style>

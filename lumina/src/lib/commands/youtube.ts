@@ -1,6 +1,11 @@
-export async function downloadYoutubeVideo(_url: string): Promise<string> {
-  throw new Error(
-    'YouTube download is not available in browser mode. ' +
-    'It requires the yt-dlp system binary which cannot run in a web browser.'
-  );
+export async function downloadYoutubeVideo(url: string): Promise<string> {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return await invoke('download_youtube', { url });
+  } catch {
+    throw new Error(
+      'YouTube download requires the Tauri desktop app with yt-dlp installed. ' +
+      'Make sure you are running the desktop version and not the browser mode.'
+    );
+  }
 }

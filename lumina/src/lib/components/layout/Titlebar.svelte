@@ -3,6 +3,41 @@
   import { searchQuery, searchFocused } from '$lib/stores/ui';
 
   let searchInputEl: HTMLInputElement;
+  let isMaximized = $state(false);
+
+  let winApi: any = null;
+
+  async function ensureWinApi() {
+    if (winApi) return winApi;
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      winApi = getCurrentWindow;
+      return winApi;
+    } catch {
+      return null;
+    }
+  }
+
+  async function handleMinimize() {
+    const api = await ensureWinApi();
+    if (!api) return;
+    try { await api().minimize(); } catch {}
+  }
+
+  async function handleMaximize() {
+    const api = await ensureWinApi();
+    if (!api) return;
+    try {
+      await api().toggleMaximize();
+      isMaximized = await api().isMaximized();
+    } catch {}
+  }
+
+  async function handleClose() {
+    const api = await ensureWinApi();
+    if (!api) return;
+    try { await api().close(); } catch {}
+  }
 
   function handleSearchKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -21,7 +56,7 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<header class="titlebar">
+<header class="titlebar" data-tauri-drag-region>
   <div class="titlebar-left">
     <span class="app-brand">Lumina</span>
   </div>
@@ -47,7 +82,19 @@
     </div>
   </div>
 
-  <div class="titlebar-right"></div>
+  <div class="titlebar-right">
+    <div class="window-controls">
+      <button class="win-btn" onclick={handleMinimize} title="Minimize">
+        <Icon name="minus" size={12} />
+      </button>
+      <button class="win-btn" onclick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
+        <Icon name={isMaximized ? 'minimize' : 'maximize'} size={12} />
+      </button>
+      <button class="win-btn win-close" onclick={handleClose} title="Close">
+        <Icon name="x" size={13} />
+      </button>
+    </div>
+  </div>
 </header>
 
 <style>
@@ -132,6 +179,37 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    min-width: 120px;
+    min-width: auto;
+    gap: 4px;
+  }
+
+  .window-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .win-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .win-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+  }
+
+  .win-close:hover {
+    background: rgba(220, 38, 38, 0.2);
+    color: #ef4444;
   }
 </style>

@@ -74,21 +74,83 @@
 
   let miniArtworkUrl = $state('');
 
-  async function exitMiniPlayer() {
-    miniPlayerMode.set(false);
-  }
-
   $effect(() => {
     const art = $currentTrack?.artwork_path;
     if (!art) { miniArtworkUrl = ''; return; }
     getArtworkUrl(art).then(url => { miniArtworkUrl = url; }).catch(() => { miniArtworkUrl = ''; });
   });
 
+  let wasMiniMode = $state(false);
+
   $effect(() => {
-    if ($miniPlayerMode) {
+    if ($miniPlayerMode && !wasMiniMode) {
+      void enterMiniPlayer();
       queuePanelOpen.set(false);
     }
+    wasMiniMode = $miniPlayerMode;
   });
+
+  // ── Mini Player Tauri Window Management ──
+  let savedWindowState = $state<{ width: number; height: number; x: number; y: number } | null>(null);
+  let winApi: any = null;
+
+  async function ensureWinApi() {
+    if (winApi) return winApi;
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const { PhysicalSize, PhysicalPosition } = await import('@tauri-apps/api/dpi');
+      winApi = { getCurrentWindow, PhysicalSize, PhysicalPosition };
+      return winApi;
+    } catch {
+      return null;
+    }
+  }
+
+  async function enterMiniPlayer() {
+    const api = await ensureWinApi();
+    if (api) {
+      try {
+        const appWindow = api.getCurrentWindow();
+        const isMax = await appWindow.isMaximized();
+        if (isMax) await appWindow.toggleMaximize();
+        const size = await appWindow.size();
+        const pos = await appWindow.position();
+        savedWindowState = {
+          width: size.width,
+          height: size.height,
+          x: pos.x,
+          y: pos.y,
+        };
+        const sf = await appWindow.scaleFactor();
+        const miniW = Math.round(360 * sf);
+        const miniH = Math.round(140 * sf);
+        const maxX = Math.round(window.screen.availWidth * sf);
+        const maxY = Math.round(window.screen.availHeight * sf);
+        await appWindow.setSize(new api.PhysicalSize(miniW, miniH));
+        await appWindow.setPosition(new api.PhysicalPosition(maxX - miniW - Math.round(15 * sf), maxY - miniH - Math.round(15 * sf)));
+        await appWindow.setAlwaysOnTop(true);
+      } catch (e) {
+        console.warn('Tauri window operation failed:', e);
+      }
+    }
+    miniPlayerMode.set(true);
+  }
+
+  async function exitMiniPlayer() {
+    const api = await ensureWinApi();
+    if (api && savedWindowState) {
+      try {
+        const appWindow = api.getCurrentWindow();
+        await appWindow.setAlwaysOnTop(false);
+        await appWindow.setSize(new api.PhysicalSize(savedWindowState.width, savedWindowState.height));
+        await appWindow.setPosition(new api.PhysicalPosition(savedWindowState.x, savedWindowState.y));
+      } catch (e) {
+        console.warn('Tauri window restore failed:', e);
+      }
+      savedWindowState = null;
+    }
+    miniPlayerMode.set(false);
+  }
 
   async function handlePlayPlaylist(list: Track[], index: number) {
     await handlePlayFromCustomList(list, index);
@@ -147,45 +209,41 @@
 </script>
 
 {#if $miniPlayerMode}
-  <!-- Square Mini Player -->
+  <!-- Compact Mini Player -->
   <div class="mini-player" data-tauri-drag-region>
-    <div class="mini-art-bg">
+    <div class="mini-art">
       {#if miniArtworkUrl}
         <img src={miniArtworkUrl} alt="" />
       {:else}
         <div class="mini-art-placeholder">
-          <Icon name="music" size={40} color="rgba(255,255,255,0.3)" />
+          <Icon name="music" size={20} color="rgba(255,255,255,0.4)" />
         </div>
       {/if}
     </div>
-    <div class="mini-overlay">
-      <div class="mini-top-bar" data-tauri-drag-region>
-        <button class="mini-exit-btn" onclick={exitMiniPlayer} title="Exit mini player">
-          <Icon name="maximize" size={12} />
+    <div class="mini-body">
+      <div class="mini-info">
+        {#if $currentTrack}
+          <div class="mini-title truncate">{$currentTrack.title}</div>
+          <div class="mini-artist truncate">{$currentTrack.artist}</div>
+        {:else}
+          <div class="mini-title" style="opacity:0.5">No track</div>
+        {/if}
+      </div>
+      <div class="mini-controls">
+        <button class="mini-btn" onclick={() => void playPrevious()} title="Previous">
+          <Icon name="skip-back" size={13} />
+        </button>
+        <button class="mini-play-btn" onclick={() => void togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
+          <Icon name={$isPlaying ? 'pause' : 'play'} size={15} />
+        </button>
+        <button class="mini-btn" onclick={() => void playNext()} title="Next">
+          <Icon name="skip-forward" size={13} />
         </button>
       </div>
-      <div class="mini-bottom">
-        <div class="mini-track-info">
-          {#if $currentTrack}
-            <div class="mini-track-title truncate">{$currentTrack.title}</div>
-            <div class="mini-track-artist truncate">{$currentTrack.artist}</div>
-          {:else}
-            <div class="mini-track-title" style="opacity:0.5">No track</div>
-          {/if}
-        </div>
-        <div class="mini-play-controls">
-          <button class="mini-ctrl-btn" onclick={() => void playPrevious()}>
-            <Icon name="skip-back" size={14} />
-          </button>
-          <button class="mini-play-btn" onclick={() => void togglePlayPause()}>
-            <Icon name={$isPlaying ? 'pause' : 'play'} size={16} />
-          </button>
-          <button class="mini-ctrl-btn" onclick={() => void playNext()}>
-            <Icon name="skip-forward" size={14} />
-          </button>
-        </div>
-      </div>
     </div>
+    <button class="mini-close" onclick={exitMiniPlayer} title="Exit mini player (restore window)">
+      <Icon name="x" size={11} />
+    </button>
   </div>
 {:else}
 <div class="app-container">
@@ -517,22 +575,30 @@
     color: var(--text-primary);
   }
 
-  /* ====== Square Mini Player ====== */
+  /* ====== Compact Mini Player ====== */
   .mini-player {
-    position: relative;
-    width: 100vw;
+    display: flex;
+    align-items: center;
     height: 100vh;
-    overflow: hidden;
-    background: #0a0a0a;
+    width: 100vw;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 0 8px 0 4px;
+    gap: 8px;
     -webkit-app-region: drag;
+    overflow: hidden;
   }
 
-  .mini-art-bg {
-    position: absolute;
-    inset: 0;
+  .mini-art {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-primary);
   }
 
-  .mini-art-bg img {
+  .mini-art img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -545,114 +611,101 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #111;
+    background: var(--bg-primary);
   }
 
-  .mini-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 100%);
-    -webkit-app-region: no-drag;
-  }
-
-  .mini-top-bar {
-    display: flex;
-    justify-content: flex-end;
-    padding: 6px 6px;
-    -webkit-app-region: drag;
-  }
-
-  .mini-exit-btn {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
+  .mini-body {
+    flex: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(8px);
-    color: rgba(255,255,255,0.7);
-    border: none;
-    cursor: pointer;
+    gap: 10px;
+    min-width: 0;
     -webkit-app-region: no-drag;
-    transition: all 0.1s;
   }
 
-  .mini-exit-btn:hover {
-    background: rgba(255,255,255,0.2);
-    color: white;
-  }
-
-  .mini-bottom {
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .mini-track-info {
+  .mini-info {
+    flex: 1;
     min-width: 0;
   }
 
-  .mini-track-title {
+  .mini-title {
     font-size: 12px;
     font-weight: 600;
-    color: white;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    color: var(--text-primary);
+    line-height: 1.3;
   }
 
-  .mini-track-artist {
+  .mini-artist {
     font-size: 10px;
-    color: rgba(255,255,255,0.65);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    color: var(--text-secondary);
+    line-height: 1.3;
   }
 
-  .mini-play-controls {
+  .mini-controls {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
+    gap: 2px;
+    flex-shrink: 0;
   }
 
-  .mini-ctrl-btn {
-    width: 28px;
-    height: 28px;
+  .mini-btn {
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
-    color: rgba(255,255,255,0.8);
+    color: var(--text-secondary);
     border: none;
     cursor: pointer;
     transition: all 0.1s;
+    -webkit-app-region: no-drag;
   }
 
-  .mini-ctrl-btn:hover {
-    color: white;
-    background: rgba(255,255,255,0.15);
+  .mini-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.1);
   }
 
   .mini-play-btn {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255,255,255,0.95);
-    color: #000;
+    background: var(--text-primary);
+    color: var(--bg-primary);
     border: none;
     cursor: pointer;
     transition: all 0.1s;
+    -webkit-app-region: no-drag;
   }
 
   .mini-play-btn:hover {
-    background: #fff;
-    transform: scale(1.05);
+    transform: scale(1.08);
+  }
+
+  .mini-close {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-tertiary);
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-app-region: no-drag;
+    transition: all 0.1s;
+  }
+
+  .mini-close:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
   }
 
   /* ====== YouTube Download View ====== */
