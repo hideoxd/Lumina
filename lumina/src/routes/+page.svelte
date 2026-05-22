@@ -6,19 +6,18 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
   import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen, lastWindowSize, queuePanelOpen } from '$lib/stores/ui';
-  import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks } from '$lib/stores/library';
+  import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks, folderPermissionState } from '$lib/stores/library';
   import TrackList from '$lib/components/library/TrackList.svelte';
   import AlbumGrid from '$lib/components/library/AlbumGrid.svelte';
   import ArtistGrid from '$lib/components/library/ArtistGrid.svelte';
   import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte';
   import { playlists, selectedPlaylist, playlistTracks, selectPlaylist, refreshPlaylists } from '$lib/stores/playlists';
   import { scanDirectory, deletePlaylist } from '$lib/commands/library';
-  import { downloadYoutubeVideo } from '$lib/commands/youtube';
   import SettingsModal from '$lib/components/overlays/SettingsModal.svelte';
   import NowPlaying from '$lib/components/overlays/NowPlaying.svelte';
   import QueuePanel from '$lib/components/overlays/QueuePanel.svelte';
   import { onMount } from 'svelte';
-  import { addMusicFolderWithDialog, initLibraryListeners, refreshTracks } from '$lib/controllers/library';
+  import { addMusicFolderWithDialog, initLibraryListeners, refreshTracks, checkFolderPermission, requestFolderPermission } from '$lib/controllers/library';
   import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback, queueState } from '$lib/stores/queue';
   import { currentTrack, isPlaying, volume, formatTime } from '$lib/stores/player';
   import { getArtworkUrl } from '$lib/utils/artwork';
@@ -38,6 +37,12 @@
       console.error('Failed to init library listeners:', e);
     }
 
+    try {
+      await checkFolderPermission();
+    } catch (e) {
+      console.error('Failed to check folder permission:', e);
+    }
+
     // Use allSettled so one failure doesn't block the other
     const results = await Promise.allSettled([
       refreshTracks(),
@@ -53,7 +58,10 @@
 
   async function handleAddMusic() {
     try {
-      await addMusicFolderWithDialog();
+      const folderName = await addMusicFolderWithDialog();
+      if (folderName) {
+        await checkFolderPermission();
+      }
     } catch {
       libraryLoading.set(false);
     }
@@ -90,65 +98,74 @@
     wasMiniMode = $miniPlayerMode;
   });
 
-  // ── Mini Player Tauri Window Management ──
-  let savedWindowState = $state<{ width: number; height: number; x: number; y: number } | null>(null);
-  let winApi: any = null;
+  // ── Drag-and-drop & Floating State for Mini Player ──
+  let miniX = $state(20);
+  let miniY = $state(20);
+  let isDragging = $state(false);
 
-  async function ensureWinApi() {
-    if (winApi) return winApi;
+  onMount(() => {
+    // Initial position in bottom-right corner
+    miniX = window.innerWidth - 320 - 24;
+    miniY = window.innerHeight - 72 - 24;
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  });
+
+  function handleResize() {
+    if (miniX > window.innerWidth - 320) {
+      miniX = Math.max(0, window.innerWidth - 320 - 24);
+    }
+    if (miniY > window.innerHeight - 72) {
+      miniY = Math.max(0, window.innerHeight - 72 - 24);
+    }
+  }
+
+  function handleMouseDown(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    // Don't drag if clicking buttons, links, or standard control regions
+    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('textarea')) {
+      return;
+    }
+    isDragging = true;
+    const startX = e.clientX - miniX;
+    const startY = e.clientY - miniY;
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      miniX = Math.max(0, Math.min(window.innerWidth - 320, moveEvent.clientX - startX));
+      miniY = Math.max(0, Math.min(window.innerHeight - 72, moveEvent.clientY - startY));
+    }
+
+    function handleMouseUp() {
+      isDragging = false;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }
+
+  async function handleRequestFolderPermission() {
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const { PhysicalSize, PhysicalPosition } = await import('@tauri-apps/api/dpi');
-      winApi = { getCurrentWindow, PhysicalSize, PhysicalPosition };
-      return winApi;
-    } catch {
-      return null;
+      const granted = await requestFolderPermission();
+      if (granted) {
+        await refreshTracks();
+      }
+    } catch (e) {
+      console.error('[lumina] Failed to request folder permission:', e);
     }
   }
 
   async function enterMiniPlayer() {
-    const api = await ensureWinApi();
-    if (api) {
-      try {
-        const appWindow = api.getCurrentWindow();
-        const isMax = await appWindow.isMaximized();
-        if (isMax) await appWindow.toggleMaximize();
-        const size = await appWindow.size();
-        const pos = await appWindow.position();
-        savedWindowState = {
-          width: size.width,
-          height: size.height,
-          x: pos.x,
-          y: pos.y,
-        };
-        const sf = await appWindow.scaleFactor();
-        const miniW = Math.round(360 * sf);
-        const miniH = Math.round(140 * sf);
-        const maxX = Math.round(window.screen.availWidth * sf);
-        const maxY = Math.round(window.screen.availHeight * sf);
-        await appWindow.setSize(new api.PhysicalSize(miniW, miniH));
-        await appWindow.setPosition(new api.PhysicalPosition(maxX - miniW - Math.round(15 * sf), maxY - miniH - Math.round(15 * sf)));
-        await appWindow.setAlwaysOnTop(true);
-      } catch (e) {
-        console.warn('Tauri window operation failed:', e);
-      }
-    }
     miniPlayerMode.set(true);
+    // Center-ish bottom right corner positioning on entrance
+    miniX = window.innerWidth - 320 - 24;
+    miniY = window.innerHeight - 72 - 24;
   }
 
   async function exitMiniPlayer() {
-    const api = await ensureWinApi();
-    if (api && savedWindowState) {
-      try {
-        const appWindow = api.getCurrentWindow();
-        await appWindow.setAlwaysOnTop(false);
-        await appWindow.setSize(new api.PhysicalSize(savedWindowState.width, savedWindowState.height));
-        await appWindow.setPosition(new api.PhysicalPosition(savedWindowState.x, savedWindowState.y));
-      } catch (e) {
-        console.warn('Tauri window restore failed:', e);
-      }
-      savedWindowState = null;
-    }
     miniPlayerMode.set(false);
   }
 
@@ -182,68 +199,60 @@
       return [...list].sort((a, b) => (b.last_played || '').localeCompare(a.last_played || ''));
     })()
   );
-
-  let youtubeUrl = $state('');
-  let downloadingYoutube = $state(false);
-  let downloadStatus = $state('');
-  
-  async function handleDownloadYoutube() {
-    if (!youtubeUrl.trim() || downloadingYoutube) return;
-    downloadingYoutube = true;
-    downloadStatus = 'Downloading… (first time may take a moment to set up)';
-    try {
-      const filePath = await downloadYoutubeVideo(youtubeUrl.trim());
-      youtubeUrl = '';
-      downloadStatus = 'Download complete! Refreshing library…';
-      await refreshTracks();
-      downloadStatus = 'Added to library successfully!';
-      setTimeout(() => { downloadStatus = ''; }, 3000);
-    } catch (e: any) {
-      console.error('Failed to download youtube video:', e);
-      downloadStatus = '';
-      alert('Download failed: ' + (typeof e === 'string' ? e : e?.message || JSON.stringify(e)));
-    } finally {
-      downloadingYoutube = false;
-    }
-  }
 </script>
 
 {#if $miniPlayerMode}
-  <!-- Compact Mini Player -->
-  <div class="mini-player" data-tauri-drag-region>
-    <div class="mini-art">
-      {#if miniArtworkUrl}
-        <img src={miniArtworkUrl} alt="" />
-      {:else}
-        <div class="mini-art-placeholder">
-          <Icon name="music" size={20} color="rgba(255,255,255,0.4)" />
-        </div>
-      {/if}
-    </div>
-    <div class="mini-body">
-      <div class="mini-info">
-        {#if $currentTrack}
-          <div class="mini-title truncate">{$currentTrack.title}</div>
-          <div class="mini-artist truncate">{$currentTrack.artist}</div>
+  <!-- Premium Glassmorphic Draggable Floating Mini Player -->
+  <div class="mini-player-overlay">
+    {#if miniArtworkUrl}
+      <div class="mini-player-backdrop-art" style="background-image: url({miniArtworkUrl})"></div>
+    {/if}
+    <div class="mini-player-backdrop-dim"></div>
+
+    <div 
+      class="mini-player-floating" 
+      style="left: {miniX}px; top: {miniY}px;" 
+      onmousedown={handleMouseDown}
+      role="presentation"
+    >
+      <div class="mini-drag-handle">
+        <Icon name="grid" size={10} color="rgba(255,255,255,0.4)" />
+      </div>
+
+      <div class="mini-art">
+        {#if miniArtworkUrl}
+          <img src={miniArtworkUrl} alt="" />
         {:else}
-          <div class="mini-title" style="opacity:0.5">No track</div>
+          <div class="mini-art-placeholder">
+            <Icon name="music" size={20} color="rgba(255,255,255,0.4)" />
+          </div>
         {/if}
       </div>
-      <div class="mini-controls">
-        <button class="mini-btn" onclick={() => void playPrevious()} title="Previous">
-          <Icon name="skip-back" size={13} />
-        </button>
-        <button class="mini-play-btn" onclick={() => void togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
-          <Icon name={$isPlaying ? 'pause' : 'play'} size={15} />
-        </button>
-        <button class="mini-btn" onclick={() => void playNext()} title="Next">
-          <Icon name="skip-forward" size={13} />
-        </button>
+      <div class="mini-body">
+        <div class="mini-info">
+          {#if $currentTrack}
+            <div class="mini-title truncate">{$currentTrack.title}</div>
+            <div class="mini-artist truncate">{$currentTrack.artist}</div>
+          {:else}
+            <div class="mini-title" style="opacity:0.5">No track</div>
+          {/if}
+        </div>
+        <div class="mini-controls">
+          <button class="mini-btn" onclick={() => void playPrevious()} title="Previous">
+            <Icon name="skip-back" size={13} />
+          </button>
+          <button class="mini-play-btn" onclick={() => void togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
+            <Icon name={$isPlaying ? 'pause' : 'play'} size={15} />
+          </button>
+          <button class="mini-btn" onclick={() => void playNext()} title="Next">
+            <Icon name="skip-forward" size={13} />
+          </button>
+        </div>
       </div>
+      <button class="mini-close" onclick={exitMiniPlayer} title="Exit mini player (restore window)">
+        <Icon name="x" size={11} />
+      </button>
     </div>
-    <button class="mini-close" onclick={exitMiniPlayer} title="Exit mini player (restore window)">
-      <Icon name="x" size={11} />
-    </button>
   </div>
 {:else}
 <div class="app-container">
@@ -262,6 +271,18 @@
     <!-- Main Content Area -->
     <main class="app-content">
       <div class="content-inner">
+        {#if $folderPermissionState === 'stored_needs_permission'}
+          <div class="permission-banner">
+            <div class="permission-banner-content">
+              <Icon name="alert-triangle" size={18} color="#ef4444" />
+              <span>Lumina needs permission to access your local music library.</span>
+            </div>
+            <button class="permission-btn" onclick={handleRequestFolderPermission}>
+              Grant Access
+            </button>
+          </div>
+        {/if}
+
         {#if $currentView === 'tracks'}
           <div class="view-header">
             <div class="view-title-row">
@@ -388,41 +409,6 @@
               />
             </div>
           {/if}
-
-        {:else if $currentView === 'youtube'}
-          <div class="view-header">
-            <div class="view-title-row">
-              <h1 class="view-title">YouTube Download</h1>
-            </div>
-          </div>
-          <div class="yt-container">
-            <div class="yt-card glass">
-              <Icon name="youtube" size={48} color="var(--text-primary)" />
-              <h2>Download Audio</h2>
-              <p>Paste a YouTube URL below to download it permanently to your Lumina library.</p>
-              
-              <div class="yt-input-row">
-                <input 
-                  type="text" 
-                  class="yt-input" 
-                  placeholder="https://www.youtube.com/watch?v=..." 
-                  bind:value={youtubeUrl}
-                  onkeydown={(e) => { if (e.key === 'Enter') handleDownloadYoutube() }}
-                />
-                <button class="yt-download-btn" onclick={handleDownloadYoutube} disabled={downloadingYoutube || !youtubeUrl.trim()}>
-                  {#if downloadingYoutube}
-                    <span class="spinner"></span> Downloading…
-                  {:else}
-                    <Icon name="download" size={16} /> Download
-                  {/if}
-                </button>
-              </div>
-              {#if downloadStatus}
-                <p class="yt-status">{downloadStatus}</p>
-              {/if}
-              <p class="yt-note">Requires <a href="https://ffmpeg.org" target="_blank" rel="noopener">ffmpeg</a> installed on your system for audio conversion.</p>
-            </div>
-          </div>
         {/if}
       </div>
     </main>
@@ -576,17 +562,84 @@
   }
 
   /* ====== Compact Mini Player ====== */
-  .mini-player {
+  .mini-player-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+    overflow: hidden;
     display: flex;
     align-items: center;
-    height: 100vh;
-    width: 100vw;
-    background: var(--bg-elevated);
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 0 8px 0 4px;
-    gap: 8px;
-    -webkit-app-region: drag;
-    overflow: hidden;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .mini-player-backdrop-art {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(40px) brightness(0.25);
+    z-index: 1;
+    pointer-events: none;
+    transition: background-image 0.5s ease;
+  }
+
+  .mini-player-backdrop-dim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.65) 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .mini-player-floating {
+    position: absolute;
+    width: 320px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    background: rgba(20, 20, 20, 0.45);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 0 12px;
+    gap: 10px;
+    z-index: 3;
+    cursor: grab;
+    pointer-events: auto;
+    user-select: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .mini-player-floating:active {
+    cursor: grabbing;
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .mini-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    padding-right: 2px;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+  }
+
+  .mini-player-floating:hover .mini-drag-handle {
+    opacity: 0.7;
   }
 
   .mini-art {
@@ -596,6 +649,7 @@
     overflow: hidden;
     flex-shrink: 0;
     background: var(--bg-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
 
   .mini-art img {
@@ -618,25 +672,27 @@
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
-    -webkit-app-region: no-drag;
   }
 
   .mini-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .mini-title {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
     line-height: 1.3;
   }
 
   .mini-artist {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-secondary);
     line-height: 1.3;
   }
@@ -644,7 +700,7 @@
   .mini-controls {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     flex-shrink: 0;
   }
 
@@ -659,18 +715,17 @@
     color: var(--text-secondary);
     border: none;
     cursor: pointer;
-    transition: all 0.1s;
-    -webkit-app-region: no-drag;
+    transition: all 0.15s ease;
   }
 
   .mini-btn:hover {
     color: var(--text-primary);
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
   }
 
   .mini-play-btn {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -679,8 +734,7 @@
     color: var(--bg-primary);
     border: none;
     cursor: pointer;
-    transition: all 0.1s;
-    -webkit-app-region: no-drag;
+    transition: all 0.2s ease;
   }
 
   .mini-play-btn:hover {
@@ -690,7 +744,7 @@
   .mini-close {
     width: 22px;
     height: 22px;
-    border-radius: 4px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -699,94 +753,66 @@
     border: none;
     cursor: pointer;
     flex-shrink: 0;
-    -webkit-app-region: no-drag;
-    transition: all 0.1s;
+    transition: all 0.15s ease;
   }
 
   .mini-close:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     color: var(--text-primary);
   }
 
-  /* ====== YouTube Download View ====== */
-  .yt-container {
-    padding: 40px;
+  /* ====== Permission Banner ====== */
+  .permission-banner {
     display: flex;
-    justify-content: center;
-  }
-  .yt-card {
-    width: 100%;
-    max-width: 600px;
-    padding: 40px;
-    border-radius: var(--radius-xl);
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: 16px;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.05);
+    animation: slideDown 0.3s ease;
   }
-  .yt-card h2 { font-size: 24px; font-weight: 700; color: white; margin: 0; }
-  .yt-card p { color: var(--text-secondary); margin: 0 0 16px 0; font-size: 14px; }
-  .yt-input-row {
+
+  .permission-banner-content {
     display: flex;
-    width: 100%;
+    align-items: center;
     gap: 12px;
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
   }
-  .yt-input {
-    flex: 1;
-    height: 44px;
-    padding: 0 16px;
-    border-radius: var(--radius-md);
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--glass-border);
-    color: white;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-  }
-  .yt-input:focus { border-color: white; }
-  .yt-download-btn {
-    height: 44px;
-    padding: 0 24px;
-    border-radius: var(--radius-md);
-    background: white;
-    color: black;
+
+  .permission-btn {
+    padding: 6px 14px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 6px;
+    color: #fca5a5;
+    font-size: 12.5px;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
     cursor: pointer;
-    border: none;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
   }
-  .yt-download-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+
+  .permission-btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
   }
-  .yt-download-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .spinner {
-    width: 14px; height: 14px;
-    border: 2px solid currentColor;
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-  }
-  .yt-status {
-    color: #4ade80;
-    font-size: 13px;
-    margin: 0;
-    animation: fadeIn 0.3s ease;
-  }
-  .yt-note {
-    color: var(--text-disabled);
-    font-size: 11px;
-    margin: 8px 0 0 0;
-  }
-  .yt-note a {
-    color: var(--text-secondary);
-    text-decoration: underline;
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 </style>

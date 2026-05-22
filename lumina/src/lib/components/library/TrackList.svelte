@@ -3,9 +3,8 @@
   import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
   import type { Track, MenuItem } from '$lib/types';
   import { getArtworkUrl } from '$lib/utils/artwork';
-  import { setTrackFavorite } from '$lib/commands/library';
-  import { patchTrack } from '$lib/stores/library';
-  import { removeTrack } from '$lib/stores/library';
+  import { setTrackFavorite, deleteTrack as apiDeleteTrack } from '$lib/commands/library';
+  import { patchTrack, removeTrack } from '$lib/stores/library';
   import { setQueue, playQueueIndex } from '$lib/stores/queue';
   import { addToQueueNext } from '$lib/stores/queue';
   import { playlists, refreshPlaylists } from '$lib/stores/playlists';
@@ -84,8 +83,13 @@
         onclick: () => { editMetadataTrack = track; showEditMetadata = true; } },
       { id: 'divider2', divider: true },
       { id: 'remove', label: 'Remove from Library', icon: 'x', danger: true,
-        onclick: () => {
-          removeTrack(track.id);
+        onclick: async () => {
+          try {
+            await apiDeleteTrack(track.id);
+            removeTrack(track.id);
+          } catch (err) {
+            console.error('[lumina] Failed to delete track from DB:', err);
+          }
         } },
     ];
 

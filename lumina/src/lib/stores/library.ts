@@ -127,3 +127,6 @@ export const scanProgress = writable<{ total: number; scanned: number; phase: st
 
 /** Track count */
 export const trackCount = derived(tracks, ($tracks) => $tracks.length);
+
+/** Folder permission state for cross-session File System Access */
+export const folderPermissionState = writable<'none' | 'stored_needs_permission' | 'granted'>('none');

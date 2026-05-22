@@ -1,6 +1,6 @@
 import { getAllTracks } from '$lib/commands/library';
-import { libraryLoading, scanProgress, tracks } from '$lib/stores/library';
-import { pickMusicFolder, scanDirectoryHandle } from '$lib/scanner';
+import { libraryLoading, scanProgress, tracks, folderPermissionState } from '$lib/stores/library';
+import { pickMusicFolder, scanDirectoryHandle, getStoredDirectoryHandle, setLastDirectoryHandle } from '$lib/scanner';
 import * as db from '$lib/db/queries';
 import type { Track } from '$lib/types';
 
@@ -88,4 +88,44 @@ export async function addMusicFolderWithDialog(): Promise<string | null> {
 
 export function disposeLibraryListeners(): void {
   // No-op in browser mode
+}
+
+/** Check if there is a saved directory handle and verify if it still has read access */
+export async function checkFolderPermission(): Promise<void> {
+  try {
+    const dirHandle = await getStoredDirectoryHandle();
+    if (dirHandle) {
+      const permission = await dirHandle.queryPermission({ mode: 'read' });
+      if (permission === 'granted') {
+        setLastDirectoryHandle(dirHandle);
+        folderPermissionState.set('granted');
+      } else {
+        folderPermissionState.set('stored_needs_permission');
+      }
+    } else {
+      folderPermissionState.set('none');
+    }
+  } catch (err) {
+    console.error('[lumina] Failed to check folder permission:', err);
+    folderPermissionState.set('none');
+  }
+}
+
+/** Explicitly prompt the browser to request permission for the stored folder handle */
+export async function requestFolderPermission(): Promise<boolean> {
+  try {
+    const dirHandle = await getStoredDirectoryHandle();
+    if (!dirHandle) return false;
+
+    const permission = await dirHandle.requestPermission({ mode: 'read' });
+    if (permission === 'granted') {
+      setLastDirectoryHandle(dirHandle);
+      folderPermissionState.set('granted');
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('[lumina] Permission prompt failed:', err);
+    return false;
+  }
 }

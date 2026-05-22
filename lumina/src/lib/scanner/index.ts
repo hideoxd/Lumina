@@ -73,7 +73,7 @@ function generateId(input: string): string {
     hash = ((hash << 5) - hash) + char;
     hash |= 0;
   }
-  return Math.abs(hash).toString(36) + '-' + Date.now().toString(36);
+  return 'track-' + Math.abs(hash).toString(36);
 }
 
 /** Get the extension from a filename (lowercase, no dot). */
@@ -133,19 +133,67 @@ function parseNumericTag(value: unknown): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+/* ── Persistence & Handle Helpers ─────────────────────────── */
+
+/** Save directory handle to IndexedDB for cross-session persistence */
+export async function saveStoredDirectoryHandle(handle: FileSystemDirectoryHandle): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('lumina_handles', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      db.createObjectStore('handles');
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction('handles', 'readwrite');
+      const store = tx.objectStore('handles');
+      const putReq = store.put(handle, 'music_folder');
+      putReq.onsuccess = () => resolve();
+      putReq.onerror = () => reject(putReq.error);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/** Retrieve directory handle from IndexedDB */
+export async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+  return new Promise((resolve) => {
+    const request = indexedDB.open('lumina_handles', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      db.createObjectStore('handles');
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction('handles', 'readonly');
+      const store = tx.objectStore('handles');
+      const getReq = store.get('music_folder');
+      getReq.onsuccess = () => resolve(getReq.result || null);
+      getReq.onerror = () => resolve(null);
+    };
+    request.onerror = () => resolve(null);
+  });
+}
+
+/** Expose a setter to let other modules assign lastDirectoryHandle on boot */
+export function setLastDirectoryHandle(handle: FileSystemDirectoryHandle | null) {
+  lastDirectoryHandle = handle;
+}
+
 /* ── Public API ───────────────────────────────────────────── */
 
 /**
- * Open the native directory picker and return the handle.
+ * Open the native directory picker, save to IndexedDB, and return the handle.
  * Returns `null` if the user cancels.
  */
 export async function pickMusicFolder(): Promise<FileSystemDirectoryHandle | null> {
   try {
     const handle = await window.showDirectoryPicker({ mode: 'read' });
     lastDirectoryHandle = handle;
+    await saveStoredDirectoryHandle(handle);
     return handle;
-  } catch {
-    // User cancelled or API unavailable
+  } catch (err) {
+    console.warn('[lumina-scanner] Directory picker cancelled or failed:', err);
     return null;
   }
 }
@@ -247,10 +295,37 @@ export async function scanDirectoryHandle(
  * needed (the audio engine handles this automatically).
  */
 export async function getFileUrlForTrack(filePath: string): Promise<string> {
-  const handle = fileHandleStore.get(filePath);
+  let handle = fileHandleStore.get(filePath);
+
   if (!handle) {
-    throw new Error(`No file handle stored for "${filePath}"`);
+    console.log(`[lumina-scanner] Cache miss for "${filePath}". Attempting to resolve via stored directory handle.`);
+    const dirHandle = lastDirectoryHandle ?? (await getStoredDirectoryHandle());
+    if (dirHandle) {
+      try {
+        const parts = filePath.split('/');
+        let current: FileSystemDirectoryHandle | FileSystemFileHandle = dirHandle;
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          if (!part) continue;
+          if (i === parts.length - 1) {
+            current = await (current as FileSystemDirectoryHandle).getFileHandle(part);
+          } else {
+            current = await (current as FileSystemDirectoryHandle).getDirectoryHandle(part);
+          }
+        }
+        handle = current as FileSystemFileHandle;
+        fileHandleStore.set(filePath, handle);
+        console.log(`[lumina-scanner] Successfully resolved file handle for "${filePath}"`);
+      } catch (err) {
+        console.error(`[lumina-scanner] Failed to resolve file handle on-the-fly for "${filePath}":`, err);
+      }
+    }
   }
+
+  if (!handle) {
+    throw new Error(`Permission Denied: Cannot access "${filePath}". Please grant access to your Music Folder using the banner.`);
+  }
+
   const file = await handle.getFile();
   return URL.createObjectURL(file);
 }

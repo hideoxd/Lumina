@@ -84,24 +84,24 @@ export async function insertTrack(track: Track): Promise<void> {
        $artwork_path, $date_added, $last_played, $play_count, $favorite
      )
      ON CONFLICT(file_path) DO UPDATE SET
-       id            = excluded.id,
-       title         = excluded.title,
-       artist        = excluded.artist,
-       album         = excluded.album,
-       album_artist  = excluded.album_artist,
-       genre         = excluded.genre,
-       year          = excluded.year,
-       track_number  = excluded.track_number,
-       disc_number   = excluded.disc_number,
+       id            = tracks.id,
+       title         = tracks.title,
+       artist        = tracks.artist,
+       album         = tracks.album,
+       album_artist  = tracks.album_artist,
+       genre         = tracks.genre,
+       year          = tracks.year,
+       track_number  = tracks.track_number,
+       disc_number   = tracks.disc_number,
        duration      = excluded.duration,
        file_format   = excluded.file_format,
        file_size     = excluded.file_size,
        bitrate       = excluded.bitrate,
        sample_rate   = excluded.sample_rate,
-       composer      = excluded.composer,
-       publisher     = excluded.publisher,
-       comments      = excluded.comments,
-       artwork_path  = excluded.artwork_path,
+       composer      = tracks.composer,
+       publisher     = tracks.publisher,
+       comments      = tracks.comments,
+       artwork_path  = tracks.artwork_path,
        date_added    = tracks.date_added,
        last_played   = tracks.last_played,
        play_count    = tracks.play_count,
@@ -475,5 +475,13 @@ export async function removeTrackFromPlaylist(
     'DELETE FROM playlist_tracks WHERE playlist_id = $pid AND track_id = $tid',
     { $pid: playlistId, $tid: trackId },
   );
+  await saveDb();
+}
+
+/** Delete a track by ID from the tracks table and all playlists. */
+export async function deleteTrack(trackId: string): Promise<void> {
+  const db = await getDb();
+  db.run('DELETE FROM playlist_tracks WHERE track_id = $id', { $id: trackId });
+  db.run('DELETE FROM tracks WHERE id = $id', { $id: trackId });
   await saveDb();
 }

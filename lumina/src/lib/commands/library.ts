@@ -17,6 +17,10 @@ export async function markTrackPlayed(trackId: string): Promise<void> {
   return db.markTrackPlayed(trackId);
 }
 
+export async function deleteTrack(trackId: string): Promise<void> {
+  return db.deleteTrack(trackId);
+}
+
 export async function updateTrackMetadata(
   trackId: string,
   fields: {
