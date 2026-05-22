@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-  import { searchQuery, searchFocused } from '$lib/stores/ui';
+  import { searchQuery, searchFocused, settingsOpen } from '$lib/stores/ui';
 
   let searchInputEl: HTMLInputElement;
   let isMaximized = $state(false);
@@ -83,6 +83,9 @@
   </div>
 
   <div class="titlebar-right">
+    <button class="settings-btn" onclick={() => settingsOpen.set(true)} title="Settings">
+      <Icon name="settings" size={15} />
+    </button>
     <div class="window-controls">
       <button class="win-btn" onclick={handleMinimize} title="Minimize">
         <Icon name="minus" size={12} />
@@ -211,5 +214,24 @@
   .win-close:hover {
     background: rgba(220, 38, 38, 0.2);
     color: #ef4444;
+  }
+
+  .settings-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .settings-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
   }
 </style>
