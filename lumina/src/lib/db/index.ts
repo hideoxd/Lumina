@@ -74,7 +74,9 @@ function loadFromStorage(): Uint8Array | null {
     }
     return bytes;
   } catch {
-    console.warn('[lumina-db] Failed to load database from localStorage');
+    console.warn('[lumina-db] Failed to load database from localStorage, starting fresh');
+    // Clear corrupted data so it doesn't keep failing
+    try { localStorage.removeItem(DB_STORAGE_KEY); } catch { /* ignore */ }
     return null;
   }
 }
@@ -93,11 +95,26 @@ function persistToStorage(database: Database): void {
 
 async function initDb(): Promise<Database> {
   const SQL = await initSqlJs({
-    locateFile: () => 'https://sql.js.org/dist/sql-wasm.wasm',
+    locateFile: () => '/sql-wasm.wasm',
   });
 
+  let instance: Database;
+
+  // Try loading saved database; if it's corrupt, start fresh
   const saved = loadFromStorage();
-  const instance = saved ? new SQL.Database(saved) : new SQL.Database();
+  if (saved) {
+    try {
+      instance = new SQL.Database(saved);
+      // Verify the database is actually functional
+      instance.exec('SELECT 1');
+    } catch (e) {
+      console.warn('[lumina-db] Saved database was corrupted, creating fresh database:', e);
+      try { localStorage.removeItem(DB_STORAGE_KEY); } catch { /* ignore */ }
+      instance = new SQL.Database();
+    }
+  } else {
+    instance = new SQL.Database();
+  }
 
   // Ensure schema exists (safe to run on every start)
   instance.run(SCHEMA);
@@ -109,11 +126,19 @@ async function initDb(): Promise<Database> {
 /**
  * Returns the singleton sql.js Database instance.
  * Initialises on first call; subsequent calls return the cached promise.
+ * If initialization fails, the promise is reset so it can be retried.
  */
 export async function getDb(): Promise<Database> {
   if (db) return db;
   if (!initPromise) {
-    initPromise = initDb();
+    initPromise = initDb().catch((err) => {
+      // Reset the promise so future calls can retry instead of
+      // permanently returning a rejected promise
+      console.error('[lumina-db] Database initialization failed:', err);
+      initPromise = null;
+      db = null;
+      throw err;
+    });
   }
   return initPromise;
 }

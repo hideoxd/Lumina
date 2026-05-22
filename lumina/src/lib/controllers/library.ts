@@ -10,9 +10,16 @@ export async function initLibraryListeners(): Promise<void> {
 }
 
 export async function refreshTracks(): Promise<Track[]> {
-  const all = await getAllTracks();
-  tracks.set(all);
-  return all;
+  try {
+    const all = await getAllTracks();
+    tracks.set(all);
+    return all;
+  } catch (e) {
+    console.error('[lumina] Failed to refresh tracks:', e);
+    // Return empty list so the UI still renders the dashboard
+    tracks.set([]);
+    return [];
+  }
 }
 
 export async function addMusicFolderWithDialog(): Promise<string | null> {

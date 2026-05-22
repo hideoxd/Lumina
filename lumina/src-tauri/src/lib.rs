@@ -43,21 +43,27 @@ pub fn run() {
             // Initialize App Data Directory
             let app_data_dir = app.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
             
-            // Initialize Database
-            let db_state = database::init_db(app_data_dir.clone())
-                .expect("Failed to initialize database");
-            app.manage(db_state);
+            // Initialize Database (non-fatal on failure)
+            match database::init_db(app_data_dir.clone()) {
+                Ok(db_state) => { app.manage(db_state); }
+                Err(e) => { eprintln!("[lumina] Database init skipped: {e}"); }
+            }
 
-            // Initialize Audio Engine
-            let audio_engine = AudioEngine::new().expect("Failed to init audio engine");
-            app.manage(AudioState {
-                engine: Mutex::new(audio_engine),
-            });
+            // Initialize Audio Engine (non-fatal on failure)
+            match AudioEngine::new() {
+                Ok(engine) => {
+                    app.manage(AudioState {
+                        engine: Mutex::new(engine),
+                    });
+                }
+                Err(e) => { eprintln!("[lumina] Audio engine init skipped: {e}"); }
+            }
 
-            // Initialize Folder Watcher
-            let watcher = FolderWatcher::new(app.handle().clone())
-                .expect("Failed to init folder watcher");
-            app.manage(Mutex::new(watcher));
+            // Initialize Folder Watcher (non-fatal on failure)
+            match FolderWatcher::new(app.handle().clone()) {
+                Ok(watcher) => { app.manage(Mutex::new(watcher)); }
+                Err(e) => { eprintln!("[lumina] Folder watcher init skipped: {e}"); }
+            }
 
             Ok(())
         })

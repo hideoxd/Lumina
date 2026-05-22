@@ -32,9 +32,23 @@
   );
 
   onMount(async () => {
-    void initLibraryListeners();
-    void refreshTracks();
-    void refreshPlaylists();
+    try {
+      initLibraryListeners();
+    } catch (e) {
+      console.error('Failed to init library listeners:', e);
+    }
+
+    // Use allSettled so one failure doesn't block the other
+    const results = await Promise.allSettled([
+      refreshTracks(),
+      refreshPlaylists()
+    ]);
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.error('App initialization partial failure:', result.reason);
+      }
+    }
   });
 
   async function handleAddMusic() {
