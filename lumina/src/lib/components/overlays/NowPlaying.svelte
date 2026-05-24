@@ -66,15 +66,30 @@
 
     <!-- Center content -->
     <div class="fs-content">
-      <div class="fs-art-container">
-        <div class="fs-art">
-          {#if artworkUrl}
-            <img src={artworkUrl} alt="Album artwork" />
-          {:else}
-            <div class="fs-art-placeholder">
-              <Icon name="music" size={64} color="rgba(255,255,255,0.2)" />
+      <div class="fs-disc-container">
+        <div class="fs-disc-stack">
+          <div class="fs-disc" class:playing={$isPlaying}>
+            <div class="fs-disc-grooves"></div>
+            <div class="fs-disc-label">
+              {#if artworkUrl}
+                <img src={artworkUrl} alt="Album artwork" />
+              {:else}
+                <div class="fs-label-placeholder">
+                  <Icon name="music" size={32} color="rgba(255,255,255,0.2)" />
+                </div>
+              {/if}
+              <div class="fs-disc-hole"></div>
             </div>
-          {/if}
+          </div>
+          <div class="fs-cover">
+            {#if artworkUrl}
+              <img src={artworkUrl} alt="Album artwork" />
+            {:else}
+              <div class="fs-cover-placeholder">
+                <Icon name="music" size={64} color="rgba(255,255,255,0.2)" />
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
 
@@ -213,33 +228,137 @@
     }
   }
 
-  .fs-art-container {
+  .fs-disc-container {
     display: flex;
     justify-content: center;
+    align-items: center;
+    overflow: visible;
   }
 
-  .fs-art {
+  .fs-disc-stack {
+    position: relative;
     width: min(400px, 70vw);
     aspect-ratio: 1;
+    overflow: visible;
+  }
+
+  /* ── Cover (front) ── */
+  .fs-cover {
+    position: absolute;
+    top: 0;
+    left: -15%;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
     border-radius: 12px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.05);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
 
-  .fs-art img {
+  .fs-cover img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
   }
 
-  .fs-art-placeholder {
+  .fs-cover-placeholder {
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* ── Vinyl disc (behind cover, shifted right) ── */
+  .fs-disc {
+    position: absolute;
+    top: 10%;
+    left: 40%;
+    width: 85%;
+    height: 85%;
+    z-index: 1;
+    border-radius: 50%;
+    background: #111;
+    box-shadow:
+      0 24px 64px rgba(0, 0, 0, 0.6),
+      inset 0 0 40px rgba(0, 0, 0, 0.9),
+      0 0 0 3px rgba(255, 255, 255, 0.04),
+      0 0 0 7px rgba(255, 255, 255, 0.02);
+    animation: discSpin 4s linear infinite;
+    animation-play-state: paused;
+    transform: translateX(20%);
+  }
+
+  .fs-disc.playing {
+    animation-play-state: running;
+  }
+
+  /* Grooves */
+  .fs-disc-grooves {
+    position: absolute;
+    inset: 9%;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+      circle at center,
+      transparent 0px,
+      transparent 0.8px,
+      rgba(255, 255, 255, 0.012) 0.8px,
+      rgba(255, 255, 255, 0.012) 1.6px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Center label */
+  .fs-disc-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 42%;
+    height: 42%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+  }
+
+  .fs-disc-label img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .fs-label-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* Spindle hole */
+  .fs-disc-hole {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8%;
+    height: 8%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: #111;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 3;
+  }
+
+  @keyframes discSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   /* Info section */
