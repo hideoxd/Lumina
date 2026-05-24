@@ -1,6 +1,10 @@
 import type { Track, Playlist } from '$lib/types';
 import * as db from '$lib/db/queries';
 
+export async function insertTrack(track: Track): Promise<void> {
+  return db.insertTrack(track);
+}
+
 export async function scanDirectory(_path: string): Promise<void> {
   // In browser mode, scanning is handled by the scanner module directly.
 }

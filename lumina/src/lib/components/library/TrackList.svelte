@@ -7,8 +7,9 @@
   import { patchTrack, removeTrack } from '$lib/stores/library';
   import { setQueue, playQueueIndex } from '$lib/stores/queue';
   import { addToQueueNext } from '$lib/stores/queue';
+  import { get } from 'svelte/store';
   import { playlists, refreshPlaylists } from '$lib/stores/playlists';
-  import { addTrackToPlaylist, removeTrackFromPlaylist } from '$lib/commands/library';
+  import { addTrackToPlaylist, removeTrackFromPlaylist, insertTrack, createPlaylist } from '$lib/commands/library';
   import EditMetadataModal from '$lib/components/overlays/EditMetadataModal.svelte';
 
   let { tracks, onPlay, playlistId }: { tracks: Track[]; onPlay?: (track: Track, index: number) => void; playlistId?: string } = $props();
@@ -74,14 +75,53 @@
   }
 
   function getContextMenuItems(track: Track, index: number): MenuItem[] {
+    const allPlaylists = get(playlists);
+
+    const addToPlaylistChildren: MenuItem[] = allPlaylists.map((pl) => ({
+      id: `pl-${pl.id}`,
+      label: pl.name,
+      icon: 'list',
+      onclick: async () => {
+        try {
+          await insertTrack(track);
+          await addTrackToPlaylist(pl.id, track.id);
+        } catch (err) {
+          console.error('[lumina] Failed to add track to playlist:', err);
+        }
+      },
+    }));
+
+    addToPlaylistChildren.push(
+      { id: 'divider-pl', divider: true },
+      {
+        id: 'new-playlist',
+        label: 'New Playlist…',
+        icon: 'plus',
+        onclick: async () => {
+          const name = prompt('Playlist name:');
+          if (!name || !name.trim()) return;
+          try {
+            await insertTrack(track);
+            const pl = await createPlaylist(name.trim());
+            await addTrackToPlaylist(pl.id, track.id);
+            await refreshPlaylists();
+          } catch (err) {
+            console.error('[lumina] Failed to create playlist:', err);
+          }
+        },
+      },
+    );
+
     const items: MenuItem[] = [
       { id: 'play-next', label: 'Play Next', icon: 'skip-forward', onclick: () => {
         playNextTrack(track);
       }},
       { id: 'divider1', divider: true },
+      { id: 'add-to-playlist', label: 'Add to Playlist', icon: 'plus', children: addToPlaylistChildren },
+      { id: 'divider2', divider: true },
       { id: 'edit-metadata', label: 'Edit Info', icon: 'edit',
         onclick: () => { editMetadataTrack = track; showEditMetadata = true; } },
-      { id: 'divider2', divider: true },
+      { id: 'divider3', divider: true },
       { id: 'remove', label: 'Remove from Library', icon: 'x', danger: true,
         onclick: async () => {
           try {

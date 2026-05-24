@@ -12,7 +12,7 @@
   import ArtistGrid from '$lib/components/library/ArtistGrid.svelte';
   import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte';
   import { playlists, selectedPlaylist, playlistTracks, selectPlaylist, refreshPlaylists } from '$lib/stores/playlists';
-  import { scanDirectory, deletePlaylist } from '$lib/commands/library';
+  import { scanDirectory, deletePlaylist, insertTrack, addTrackToPlaylist, createPlaylist } from '$lib/commands/library';
   import SettingsModal from '$lib/components/overlays/SettingsModal.svelte';
   import NowPlaying from '$lib/components/overlays/NowPlaying.svelte';
   import QueuePanel from '$lib/components/overlays/QueuePanel.svelte';
@@ -286,6 +286,49 @@
     const txt = document.createElement('textarea');
     txt.innerHTML = str;
     return txt.value;
+  }
+
+  // ── Save YouTube Track to Library + Playlist ──
+  let saveTargetTrack = $state<Track | null>(null);
+  let savePickerVisible = $state(false);
+  let newPlaylistName = $state('');
+
+  function openSavePicker(track: Track) {
+    saveTargetTrack = track;
+    newPlaylistName = '';
+    savePickerVisible = true;
+  }
+
+  function closeSavePicker() {
+    savePickerVisible = false;
+    saveTargetTrack = null;
+    newPlaylistName = '';
+  }
+
+  async function saveToPlaylist(playlistId: string) {
+    const track = saveTargetTrack;
+    if (!track) return;
+    try {
+      await insertTrack(track);
+      await addTrackToPlaylist(playlistId, track.id);
+      closeSavePicker();
+    } catch (e) {
+      console.error('[lumina] Failed to save track:', e);
+    }
+  }
+
+  async function createAndSaveToNewPlaylist() {
+    const track = saveTargetTrack;
+    if (!track || !newPlaylistName.trim()) return;
+    try {
+      await insertTrack(track);
+      const pl = await createPlaylist(newPlaylistName.trim());
+      await addTrackToPlaylist(pl.id, track.id);
+      await refreshPlaylists();
+      closeSavePicker();
+    } catch (e) {
+      console.error('[lumina] Failed to create playlist and save track:', e);
+    }
   }
 </script>
 
@@ -576,6 +619,13 @@
                       <div class="yt-card-title">{track.title}</div>
                       <div class="yt-card-artist">{track.artist}</div>
                     </div>
+                    <button
+                      class="yt-save-btn"
+                      onclick={(e) => { e.stopPropagation(); openSavePicker(track); }}
+                      title="Save to Library"
+                    >
+                      <Icon name="plus" size={14} />
+                    </button>
                   </div>
                 {/each}
               </div>
@@ -591,6 +641,47 @@
     </div>
   </div>
 </div>
+{/if}
+
+{#if savePickerVisible && saveTargetTrack}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="save-picker-backdrop" onclick={closeSavePicker} onkeydown={(e) => { if (e.key === 'Escape') closeSavePicker(); }}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="save-picker" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+      <div class="save-picker-header">
+        <div class="save-picker-title">Save to Playlist</div>
+        <button class="save-picker-close" onclick={closeSavePicker}>
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+      <div class="save-picker-track">
+        <Icon name="music" size={14} color="var(--text-tertiary)" />
+        <span class="truncate">{saveTargetTrack.title}</span>
+      </div>
+      <div class="save-picker-list">
+        {#each $playlists as pl}
+          <button class="save-picker-item" onclick={() => void saveToPlaylist(pl.id)}>
+            <Icon name="list" size={14} />
+            <span class="truncate">{pl.name}</span>
+            <span class="save-picker-count">{pl.track_count}</span>
+          </button>
+        {/each}
+      </div>
+      <div class="save-picker-divider"></div>
+      <div class="save-picker-new-row">
+        <input
+          type="text"
+          class="save-picker-input"
+          placeholder="New playlist name..."
+          bind:value={newPlaylistName}
+          onkeydown={(e) => { if (e.key === 'Enter') void createAndSaveToNewPlaylist(); }}
+        />
+        <button class="save-picker-create" onclick={() => void createAndSaveToNewPlaylist()} disabled={!newPlaylistName.trim()}>
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
 {/if}
 
 <!-- Overlays -->
@@ -1265,6 +1356,180 @@
     max-width: 600px;
   }
 
+  /* ====== YT Save Button ====== */
+  .yt-save-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s ease;
+    z-index: 2;
+  }
+
+  .yt-card:hover .yt-save-btn {
+    opacity: 1;
+  }
+
+  .yt-save-btn:hover {
+    background: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+  }
+
+  /* ====== Save to Playlist Picker ====== */
+  .save-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .save-picker {
+    width: 340px;
+    max-height: 400px;
+    background: rgba(20,20,20,0.96);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 20px 48px rgba(0,0,0,0.6);
+    animation: fadeInScale 0.2s var(--ease-out-expo);
+  }
+
+  .save-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .save-picker-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .save-picker-close {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+  }
+
+  .save-picker-close:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+  }
+
+  .save-picker-track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .save-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .save-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+  }
+
+  .save-picker-item:hover {
+    background: rgba(255,255,255,0.05);
+  }
+
+  .save-picker-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .save-picker-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .save-picker-new-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .save-picker-input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .save-picker-input:focus {
+    border-color: var(--accent-primary);
+  }
+
+  .save-picker-create {
+    padding: 8px 14px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .save-picker-create:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   @keyframes slideDown {
     from {
       transform: translateY(-10px);
@@ -1272,6 +1537,17 @@
     }
     to {
       transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
       opacity: 1;
     }
   }
