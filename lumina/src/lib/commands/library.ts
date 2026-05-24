@@ -113,6 +113,19 @@ export async function renamePlaylist(playlistId: string, name: string): Promise<
   await db.updatePlaylist(existing);
 }
 
+export async function updatePlaylistInfo(
+  playlistId: string,
+  fields: { name?: string; description?: string; artwork_path?: string | null },
+): Promise<void> {
+  const existing = await db.getPlaylist(playlistId);
+  if (!existing) throw new Error('Playlist not found');
+  if (fields.name !== undefined) existing.name = fields.name;
+  if (fields.description !== undefined) existing.description = fields.description;
+  if (fields.artwork_path !== undefined) existing.artwork_path = fields.artwork_path;
+  existing.updated_at = new Date().toISOString();
+  await db.updatePlaylist(existing);
+}
+
 export async function deletePlaylist(playlistId: string): Promise<void> {
   return db.deletePlaylist(playlistId);
 }

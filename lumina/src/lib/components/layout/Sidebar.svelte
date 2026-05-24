@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from '$lib/components/Icon.svelte';
-  import { currentView, navigateTo } from '$lib/stores/ui';
+  import { currentView, navigateTo, showCreatePlaylist } from '$lib/stores/ui';
   import { playlists, selectPlaylist } from '$lib/stores/playlists';
   import type { ViewMode } from '$lib/types';
 
@@ -13,6 +13,11 @@
     const pl = $playlists.find(p => p.id === playlistId);
     if (pl) selectPlaylist(pl);
     navigateTo('playlists');
+  }
+
+  function handleCreatePlaylist(e: MouseEvent) {
+    e.stopPropagation();
+    showCreatePlaylist.set(true);
   }
 
   const navItems = [
@@ -47,7 +52,12 @@
     </div>
 
     <div class="sidebar-section playlists-section">
-      <span class="section-label">Playlists</span>
+      <div class="section-label-row">
+        <span class="section-label">Playlists</span>
+        <button class="pl-add-btn" onclick={(e) => void handleCreatePlaylist(e)} title="New Playlist">
+          <Icon name="plus" size={12} />
+        </button>
+      </div>
       <nav class="nav-list">
         <button class="nav-item" class:active={$currentView === 'favorites'} onclick={() => handleNavClick('favorites')}>
           <Icon name="heart" size={16} />
@@ -119,13 +129,43 @@
     gap: 12px;
   }
 
+  .section-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+  }
+
   .section-label {
     font-size: 11px;
     font-weight: 600;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0 8px;
+  }
+
+  .pl-add-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.12s ease;
+  }
+
+  .playlists-section:hover .pl-add-btn {
+    opacity: 1;
+  }
+
+  .pl-add-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
   }
 
   .nav-list {

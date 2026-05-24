@@ -5,23 +5,25 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
-  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen, lastWindowSize, queuePanelOpen } from '$lib/stores/ui';
+  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen, lastWindowSize, queuePanelOpen, showCreatePlaylist, navigateTo } from '$lib/stores/ui';
   import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks, folderPermissionState } from '$lib/stores/library';
   import TrackList from '$lib/components/library/TrackList.svelte';
   import AlbumGrid from '$lib/components/library/AlbumGrid.svelte';
   import ArtistGrid from '$lib/components/library/ArtistGrid.svelte';
   import PlaylistGrid from '$lib/components/library/PlaylistGrid.svelte';
   import { playlists, selectedPlaylist, playlistTracks, selectPlaylist, refreshPlaylists } from '$lib/stores/playlists';
-  import { scanDirectory, deletePlaylist, insertTrack, addTrackToPlaylist, createPlaylist } from '$lib/commands/library';
+  import { scanDirectory, deletePlaylist, insertTrack, addTrackToPlaylist, createPlaylist, updatePlaylistInfo } from '$lib/commands/library';
   import SettingsModal from '$lib/components/overlays/SettingsModal.svelte';
   import NowPlaying from '$lib/components/overlays/NowPlaying.svelte';
   import QueuePanel from '$lib/components/overlays/QueuePanel.svelte';
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { addMusicFolderWithDialog, initLibraryListeners, refreshTracks, checkFolderPermission, requestFolderPermission, ensureFolderPermissionAtClick } from '$lib/controllers/library';
-  import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback, queueState } from '$lib/stores/queue';
+  import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback, queueState, addToQueueNext } from '$lib/stores/queue';
+  import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
+  import type { Track, MenuItem } from '$lib/types';
   import { currentTrack, isPlaying, volume, formatTime } from '$lib/stores/player';
   import { getArtworkUrl } from '$lib/utils/artwork';
-  import type { Track } from '$lib/types';
   import { youtubeApiKeyStore, hasValidApiKey } from '$lib/stores/api';
 
   // Reactive sidebar width for grid
@@ -210,6 +212,60 @@
     })()
   );
 
+  // ── YT Context Menu ──
+  let ytCtx = $state<{ x: number; y: number; track: Track; index: number } | null>(null);
+
+  function openYtCtx(e: MouseEvent, track: Track, index: number) {
+    e.stopPropagation();
+    ytCtx = { x: e.clientX, y: e.clientY, track, index };
+  }
+
+  function closeYtCtx() {
+    ytCtx = null;
+  }
+
+  function addToQueueEnd(track: Track) {
+    queueState.update(qs => ({
+      ...qs,
+      tracks: [...qs.tracks, track]
+    }));
+  }
+
+  function getYtMenuItems(track: Track, index: number): MenuItem[] {
+    return [
+      {
+        id: 'play-next', label: 'Play Next', icon: 'skip-forward',
+        onclick: () => { addToQueueNext(track); }
+      },
+      {
+        id: 'add-queue', label: 'Add to Queue', icon: 'queue',
+        onclick: () => { addToQueueEnd(track); }
+      },
+      { id: 'divider1', divider: true },
+      {
+        id: 'add-playlist', label: 'Add to Playlist', icon: 'plus',
+        children: [
+          ...get(playlists).map(pl => ({
+            id: `pl-${pl.id}`, label: pl.name, icon: 'list' as const,
+            onclick: async () => {
+              try {
+                await insertTrack(track);
+                await addTrackToPlaylist(pl.id, track.id);
+              } catch (err) {
+                console.error('[lumina] Failed to save track:', err);
+              }
+            }
+          })),
+          { id: 'divider-pl', divider: true },
+          {
+            id: 'new-playlist', label: 'New Playlist…', icon: 'plus' as const,
+            onclick: () => { openSavePicker(track); }
+          }
+        ]
+      }
+    ];
+  }
+
   // ── YouTube Search & Playback State ──
   let ytSearchQuery = $state('');
   let ytLoading = $state(false);
@@ -245,9 +301,30 @@
         throw new Error(data.error.message || 'YouTube API search failed');
       }
 
-      ytResults = (data.items || []).map((item: any) => {
+      const items: any[] = data.items || [];
+      const videoIds = items.map((item: any) => item.id.videoId).filter(Boolean).join(',');
+
+      // Fetch durations from the videos endpoint
+      let durationMap: Record<string, number> = {};
+      if (videoIds) {
+        try {
+          const durUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`;
+          const durRes = await fetch(durUrl);
+          const durData = await durRes.json();
+          if (!durData.error) {
+            for (const v of (durData.items || [])) {
+              durationMap[v.id] = parseIsoDuration(v.contentDetails.duration);
+            }
+          }
+        } catch {
+          // durations are non-critical
+        }
+      }
+
+      ytResults = items.map((item: any) => {
+        const videoId = item.id.videoId;
         return {
-          id: 'yt-' + item.id.videoId,
+          id: 'yt-' + videoId,
           title: decodeHtmlEntities(item.snippet.title),
           artist: decodeHtmlEntities(item.snippet.channelTitle),
           album: 'YouTube Single',
@@ -256,8 +333,8 @@
           year: null,
           track_number: null,
           disc_number: null,
-          duration: 0,
-          file_path: 'youtube:' + item.id.videoId,
+          duration: durationMap[videoId] || 0,
+          file_path: 'youtube:' + videoId,
           file_format: 'youtube',
           file_size: 0,
           bitrate: null,
@@ -286,6 +363,14 @@
     const txt = document.createElement('textarea');
     txt.innerHTML = str;
     return txt.value;
+  }
+
+  function parseIsoDuration(duration: string): number {
+    const m = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!m) return 0;
+    return (parseInt(m[1] || '0', 10) * 3600 +
+            parseInt(m[2] || '0', 10) * 60 +
+            parseInt(m[3] || '0', 10));
   }
 
   // ── Save YouTube Track to Library + Playlist ──
@@ -330,6 +415,237 @@
       console.error('[lumina] Failed to create playlist and save track:', e);
     }
   }
+
+  // ── Edit Playlist Info ──
+  let editPlaylistOpen = $state(false);
+  let editPlaylistName = $state('');
+  let editPlaylistDesc = $state('');
+  let editPlaylistArtwork = $state('');
+
+  function openEditPlaylist() {
+    const pl = $selectedPlaylist;
+    if (!pl) return;
+    editPlaylistName = pl.name;
+    editPlaylistDesc = pl.description;
+    editPlaylistArtwork = pl.artwork_path ?? '';
+    editPlaylistOpen = true;
+  }
+
+  function closeEditPlaylist() {
+    editPlaylistOpen = false;
+  }
+
+  function selectPlaylistImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png, image/jpeg, image/webp';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          editPlaylistArtwork = reader.result;
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  async function saveEditPlaylist() {
+    const pl = $selectedPlaylist;
+    if (!pl || !editPlaylistName.trim()) return;
+    try {
+      await updatePlaylistInfo(pl.id, {
+        name: editPlaylistName.trim(),
+        description: editPlaylistDesc,
+        artwork_path: editPlaylistArtwork || null,
+      });
+      await refreshPlaylists();
+      closeEditPlaylist();
+    } catch (e) {
+      console.error('[lumina] Failed to update playlist:', e);
+    }
+  }
+
+  // ── Create Playlist Modal ──
+  let createName = $state('');
+  let createDesc = $state('');
+  let createArtwork = $state('');
+
+  function openCreateModal() {
+    createName = '';
+    createDesc = '';
+    createArtwork = '';
+    showCreatePlaylist.set(true);
+  }
+
+  function closeCreateModal() {
+    showCreatePlaylist.set(false);
+  }
+
+  function selectCreateImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png, image/jpeg, image/webp';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          createArtwork = reader.result;
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  async function handleCreateSubmit() {
+    if (!createName.trim()) return;
+    try {
+      const pl = await createPlaylist(createName.trim(), createDesc);
+      if (createArtwork) {
+        await updatePlaylistInfo(pl.id, { artwork_path: createArtwork });
+      }
+      await refreshPlaylists();
+      selectPlaylist(pl);
+      navigateTo('playlists');
+      closeCreateModal();
+    } catch (e) {
+      console.error('[lumina] Failed to create playlist:', e);
+    }
+  }
+
+  // ── Add Songs to Playlist Panel ──
+  let addSongsOpen = $state(false);
+  let addSongsTab = $state<'tracks' | 'albums' | 'youtube'>('tracks');
+  let addSongsFilter = $state('');
+  let addSongsYtQuery = $state('');
+  let addSongsYtResults = $state<Track[]>([]);
+  let addSongsYtLoading = $state(false);
+  let addSongsYtError = $state('');
+  let expandedAlbums = $state<Set<string>>(new Set());
+
+  let selectedAddTrackIds = $state<Set<string>>(new Set());
+
+  function toggleAddTrackSelection(trackId: string) {
+    const next = new Set(selectedAddTrackIds);
+    if (next.has(trackId)) next.delete(trackId); else next.add(trackId);
+    selectedAddTrackIds = next;
+  }
+
+  function toggleAlbumExpand(albumKey: string) {
+    const next = new Set(expandedAlbums);
+    if (next.has(albumKey)) next.delete(albumKey); else next.add(albumKey);
+    expandedAlbums = next;
+  }
+
+  function getAlbumTracks(albumKey: string): Track[] {
+    return $allTracks.filter(t => `${t.album}::${t.album_artist ?? t.artist}` === albumKey);
+  }
+
+  function openAddSongs() {
+    addSongsOpen = true;
+    addSongsTab = 'tracks';
+    addSongsFilter = '';
+    addSongsYtQuery = '';
+    addSongsYtResults = [];
+    addSongsYtError = '';
+    expandedAlbums = new Set();
+    selectedAddTrackIds = new Set();
+  }
+
+  function closeAddSongs() {
+    addSongsOpen = false;
+  }
+
+  async function addSearchYoutubeToPlaylist() {
+    if (!addSongsYtQuery.trim()) return;
+    const apiKey = $youtubeApiKeyStore;
+    if (!hasValidApiKey(apiKey)) {
+      addSongsYtError = 'YouTube API key not configured.';
+      return;
+    }
+    addSongsYtLoading = true;
+    addSongsYtError = '';
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=25&q=${encodeURIComponent(addSongsYtQuery)}&type=video&key=${apiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'Search failed');
+      const items: any[] = data.items || [];
+      const videoIds = items.map((item: any) => item.id.videoId).filter(Boolean).join(',');
+      let durationMap: Record<string, number> = {};
+      if (videoIds) {
+        try {
+          const durUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`;
+          const durRes = await fetch(durUrl);
+          const durData = await durRes.json();
+          if (!durData.error) {
+            for (const v of (durData.items || [])) durationMap[v.id] = parseIsoDuration(v.contentDetails.duration);
+          }
+        } catch { /* non-critical */ }
+      }
+      addSongsYtResults = items.map((item: any) => {
+        const videoId = item.id.videoId;
+        return {
+          id: 'yt-' + videoId,
+          title: decodeHtmlEntities(item.snippet.title),
+          artist: decodeHtmlEntities(item.snippet.channelTitle),
+          album: 'YouTube Single',
+          album_artist: 'YouTube',
+          genre: 'YouTube',
+          year: null,
+          track_number: null,
+          disc_number: null,
+          duration: durationMap[videoId] || 0,
+          file_path: 'youtube:' + videoId,
+          file_format: 'youtube',
+          file_size: 0,
+          bitrate: null,
+          sample_rate: null,
+          composer: null,
+          publisher: null,
+          comments: null,
+          artwork_path: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || '',
+          date_added: new Date().toISOString(),
+          last_played: null,
+          play_count: 0,
+          favorite: false
+        };
+      });
+    } catch (e: any) {
+      addSongsYtError = e.message || 'Search failed.';
+      addSongsYtResults = [];
+    } finally {
+      addSongsYtLoading = false;
+    }
+  }
+
+  async function addTrackToCurrentPlaylist(track: Track) {
+    const pl = $selectedPlaylist;
+    if (!pl) return;
+    try {
+      await insertTrack(track);
+      await addTrackToPlaylist(pl.id, track.id);
+      await refreshPlaylists();
+    } catch (e) {
+      console.error('[lumina] Failed to add track to playlist:', e);
+    }
+  }
+
+  let addSongsFilteredTracks = $derived(
+    addSongsFilter
+      ? $allTracks.filter(t =>
+          t.title.toLowerCase().includes(addSongsFilter.toLowerCase()) ||
+          t.artist.toLowerCase().includes(addSongsFilter.toLowerCase()) ||
+          t.album.toLowerCase().includes(addSongsFilter.toLowerCase())
+        )
+      : $allTracks
+  );
 </script>
 
 {#if $miniPlayerMode}
@@ -467,18 +783,42 @@
 
         {:else if $currentView === 'playlists'}
           {#if $selectedPlaylist}
-            <div class="view-header">
-              <div class="view-title-row">
-                <button class="back-btn" onclick={() => selectPlaylist(null)}>
-                  <Icon name="chevron-left" size={16} />
-                </button>
-                <h1 class="view-title">{$selectedPlaylist.name}</h1>
-                <span class="view-count">{$playlistTracks.length}</span>
-              </div>
-              <button class="add-btn danger" onclick={handleDeleteCurrentPlaylist}>
-                <Icon name="x" size={14} />
-                <span>Delete</span>
+            <div class="pl-header">
+              <button class="back-btn" onclick={() => selectPlaylist(null)}>
+                <Icon name="chevron-left" size={16} />
               </button>
+              <div class="pl-cover-row">
+                <div class="pl-cover">
+                  {#if $selectedPlaylist.artwork_path}
+                    <img src={$selectedPlaylist.artwork_path} alt="" />
+                  {:else}
+                    <div class="pl-cover-placeholder">
+                      <Icon name="list" size={48} color="var(--accent-primary)" />
+                    </div>
+                  {/if}
+                </div>
+                <div class="pl-info">
+                  <h1 class="pl-name">{$selectedPlaylist.name}</h1>
+                  {#if $selectedPlaylist.description}
+                    <p class="pl-description">{$selectedPlaylist.description}</p>
+                  {/if}
+                  <span class="pl-count">{$playlistTracks.length} tracks</span>
+                  <div class="pl-actions">
+                    <button class="add-btn" onclick={openAddSongs}>
+                      <Icon name="plus" size={14} />
+                      <span>Add Songs</span>
+                    </button>
+                    <button class="add-btn" onclick={openEditPlaylist}>
+                      <Icon name="edit" size={14} />
+                      <span>Edit Info</span>
+                    </button>
+                    <button class="add-btn danger" onclick={handleDeleteCurrentPlaylist}>
+                      <Icon name="x" size={14} />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             {#if $playlistTracks.length === 0}
               <p class="empty-text">This playlist is empty.</p>
@@ -614,21 +954,34 @@
                           <Icon name="play" size={18} />
                         </div>
                       </div>
+                      {#if track.duration > 0}
+                        <span class="yt-duration-badge">{formatTime(track.duration)}</span>
+                      {/if}
                     </div>
                     <div class="yt-card-info">
                       <div class="yt-card-title">{track.title}</div>
                       <div class="yt-card-artist">{track.artist}</div>
                     </div>
                     <button
-                      class="yt-save-btn"
-                      onclick={(e) => { e.stopPropagation(); openSavePicker(track); }}
-                      title="Save to Library"
+                      class="yt-ctx-btn"
+                      onclick={(e) => openYtCtx(e, track, i)}
+                      title="More"
                     >
-                      <Icon name="plus" size={14} />
+                      <Icon name="more-horizontal" size={16} />
                     </button>
                   </div>
                 {/each}
               </div>
+
+              {#if ytCtx}
+                <ContextMenu
+                  items={getYtMenuItems(ytCtx.track, ytCtx.index)}
+                  x={ytCtx.x}
+                  y={ytCtx.y}
+                  onClose={closeYtCtx}
+                />
+              {/if}
+
             {/if}
           </div>
         {/if}
@@ -679,6 +1032,177 @@
         <button class="save-picker-create" onclick={() => void createAndSaveToNewPlaylist()} disabled={!newPlaylistName.trim()}>
           Create
         </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if editPlaylistOpen && $selectedPlaylist}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="save-picker-backdrop" onclick={closeEditPlaylist} onkeydown={(e) => { if (e.key === 'Escape') closeEditPlaylist(); }}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="save-picker" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+      <div class="save-picker-header">
+        <div class="save-picker-title">Edit Playlist</div>
+        <button class="save-picker-close" onclick={closeEditPlaylist}>
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+      <div class="save-picker-new-row" style="margin-top:4px">
+        <input
+          type="text"
+          class="save-picker-input"
+          placeholder="Playlist name"
+          bind:value={editPlaylistName}
+          onkeydown={(e) => { if (e.key === 'Enter') void saveEditPlaylist(); }}
+        />
+      </div>
+      <div class="save-picker-new-row">
+        <input
+          type="text"
+          class="save-picker-input"
+          placeholder="Description (optional)"
+          bind:value={editPlaylistDesc}
+          onkeydown={(e) => { if (e.key === 'Enter') void saveEditPlaylist(); }}
+        />
+      </div>
+      <button class="pl-art-btn" onclick={selectPlaylistImage}>
+        {#if editPlaylistArtwork}
+          <span class="truncate">✓ Image selected</span>
+        {:else}
+          <span>Set Cover Image</span>
+        {/if}
+      </button>
+      <div class="save-picker-divider"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="save-picker-create" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary)" onclick={closeEditPlaylist}>Cancel</button>
+        <button class="save-picker-create" onclick={() => void saveEditPlaylist()} disabled={!editPlaylistName.trim()}>Save</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if $showCreatePlaylist}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="save-picker-backdrop" onclick={closeCreateModal} onkeydown={(e) => { if (e.key === 'Escape') closeCreateModal(); }}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="save-picker" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+      <div class="save-picker-header">
+        <div class="save-picker-title">New Playlist</div>
+        <button class="save-picker-close" onclick={closeCreateModal}>
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+      <div class="save-picker-new-row" style="margin-top:4px">
+        <input
+          type="text"
+          class="save-picker-input"
+          placeholder="Playlist name"
+          bind:value={createName}
+          onkeydown={(e) => { if (e.key === 'Enter') void handleCreateSubmit(); }}
+        />
+      </div>
+      <div class="save-picker-new-row">
+        <input
+          type="text"
+          class="save-picker-input"
+          placeholder="Description (optional)"
+          bind:value={createDesc}
+        />
+      </div>
+      <button class="pl-art-btn" onclick={selectCreateImage}>
+        {#if createArtwork}
+          <span class="truncate">✓ Image selected</span>
+        {:else}
+          <span>Set Cover Image</span>
+        {/if}
+      </button>
+      <div class="save-picker-divider"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="save-picker-create" style="background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary)" onclick={closeCreateModal}>Cancel</button>
+        <button class="save-picker-create" onclick={() => void handleCreateSubmit()} disabled={!createName.trim()}>Create</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if addSongsOpen}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="save-picker-backdrop" onclick={closeAddSongs} onkeydown={(e) => { if (e.key === 'Escape') closeAddSongs(); }}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="save-picker add-songs-panel" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+      <div class="save-picker-header">
+        <div class="save-picker-title">Add Songs to Playlist</div>
+        <button class="save-picker-close" onclick={closeAddSongs}>
+          <Icon name="x" size={14} />
+        </button>
+      </div>
+
+      <div class="add-songs-tabs">
+        <button class="add-songs-tab" class:active={addSongsTab === 'tracks'} onclick={() => addSongsTab = 'tracks'}>All Tracks</button>
+        <button class="add-songs-tab" class:active={addSongsTab === 'albums'} onclick={() => addSongsTab = 'albums'}>Albums</button>
+        <button class="add-songs-tab" class:active={addSongsTab === 'youtube'} onclick={() => addSongsTab = 'youtube'}>YouTube Search</button>
+      </div>
+
+      <div class="add-songs-body">
+        {#if addSongsTab === 'tracks'}
+          <input type="text" class="save-picker-input" placeholder="Filter tracks…" bind:value={addSongsFilter} />
+          <div class="add-songs-tracklist">
+            {#each addSongsFilteredTracks as track}
+              <div class="add-songs-track">
+                <div class="add-songs-track-info">
+                  <span class="truncate">{track.title}</span>
+                  <span class="add-songs-track-artist truncate">{track.artist}</span>
+                </div>
+                <button class="add-songs-add-btn" onclick={() => void addTrackToCurrentPlaylist(track)} title="Add to playlist">+</button>
+              </div>
+            {/each}
+          </div>
+        {:else if addSongsTab === 'albums'}
+          <div class="add-songs-tracklist">
+            {#each $albums as album}
+              {@const albumKey = album.id}
+              <div class="add-songs-album">
+                <button class="add-songs-album-header" onclick={() => toggleAlbumExpand(albumKey)}>
+                  <Icon name="chevron-right" size={12} />
+                  <span class="truncate">{album.title}</span>
+                  <span class="add-songs-album-artist truncate">{album.artist}</span>
+                </button>
+                {#if expandedAlbums.has(albumKey)}
+                  {#each getAlbumTracks(albumKey) as track}
+                    <div class="add-songs-track" style="padding-left:36px">
+                      <div class="add-songs-track-info">
+                        <span class="truncate">{track.title}</span>
+                      </div>
+                      <button class="add-songs-add-btn" onclick={() => void addTrackToCurrentPlaylist(track)} title="Add to playlist">+</button>
+                    </div>
+                  {/each}
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {:else if addSongsTab === 'youtube'}
+          <div class="add-songs-yt-row">
+            <input type="text" class="save-picker-input" placeholder="Search YouTube…" bind:value={addSongsYtQuery} onkeydown={(e) => { if (e.key === 'Enter') void addSearchYoutubeToPlaylist(); }} />
+            <button class="add-songs-yt-btn" onclick={() => void addSearchYoutubeToPlaylist()} disabled={addSongsYtLoading}>
+              {addSongsYtLoading ? '…' : 'Search'}
+            </button>
+          </div>
+          {#if addSongsYtError}
+            <p class="add-songs-yt-error">{addSongsYtError}</p>
+          {/if}
+          <div class="add-songs-tracklist">
+            {#each addSongsYtResults as track}
+              <div class="add-songs-track">
+                <div class="add-songs-track-info">
+                  <span class="truncate">{track.title}</span>
+                  <span class="add-songs-track-artist truncate">{track.artist}</span>
+                </div>
+                <button class="add-songs-add-btn" onclick={() => void addTrackToCurrentPlaylist(track)} title="Add to playlist">+</button>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   </div>
@@ -740,6 +1264,83 @@
     color: var(--text-tertiary);
     font-weight: 400;
   }
+
+  /* ====== Playlist Header with Cover ====== */
+  .pl-header {
+    margin-bottom: 32px;
+  }
+
+  .pl-header .back-btn {
+    margin-bottom: 16px;
+  }
+
+  .pl-cover-row {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .pl-cover {
+    width: 200px;
+    height: 200px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--accent-gradient-subtle);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  }
+
+  .pl-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    image-rendering: auto;
+  }
+
+  .pl-cover-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pl-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 12px;
+    min-width: 0;
+  }
+
+  .pl-name {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    margin: 0;
+  }
+
+  .pl-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .pl-count {
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+
+  .pl-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+
 
   .add-btn {
     display: flex;
@@ -1173,6 +1774,21 @@
     transform: scale(1.05);
   }
 
+  .yt-duration-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.75);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    z-index: 1;
+    pointer-events: none;
+  }
+
   .yt-play-overlay {
     position: absolute;
     top: 0;
@@ -1356,14 +1972,14 @@
     max-width: 600px;
   }
 
-  /* ====== YT Save Button ====== */
-  .yt-save-btn {
+  /* ====== YT 3-dot Button ====== */
+  .yt-ctx-btn {
     position: absolute;
     bottom: 8px;
     right: 8px;
     width: 28px;
     height: 28px;
-    border-radius: 50%;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1376,14 +1992,13 @@
     z-index: 2;
   }
 
-  .yt-card:hover .yt-save-btn {
+  .yt-card:hover .yt-ctx-btn {
     opacity: 1;
   }
 
-  .yt-save-btn:hover {
-    background: var(--accent-primary);
+  .yt-ctx-btn:hover {
+    background: rgba(255,255,255,0.15);
     color: #fff;
-    border-color: var(--accent-primary);
   }
 
   /* ====== Save to Playlist Picker ====== */
@@ -1528,6 +2143,193 @@
   .save-picker-create:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .pl-art-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px dashed rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.02);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .pl-art-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  /* ====== Add Songs Panel ====== */
+  .add-songs-panel {
+    max-width: 520px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .add-songs-tabs {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 3px;
+    margin: 12px 0;
+  }
+
+  .add-songs-tab {
+    flex: 1;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .add-songs-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .add-songs-tab.active {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+  }
+
+  .add-songs-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .add-songs-tracklist {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+
+  .add-songs-track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+
+  .add-songs-track:hover {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .add-songs-track-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+
+  .add-songs-track-artist {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .add-songs-add-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent-primary);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.12s;
+    flex-shrink: 0;
+  }
+
+  .add-songs-track:hover .add-songs-add-btn {
+    opacity: 1;
+  }
+
+  .add-songs-add-btn:hover {
+    filter: brightness(1.2);
+  }
+
+  .add-songs-album {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .add-songs-album-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    text-align: left;
+    transition: background 0.1s;
+  }
+
+  .add-songs-album-header:hover {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .add-songs-album-artist {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .add-songs-yt-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .add-songs-yt-btn {
+    padding: 8px 14px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .add-songs-yt-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .add-songs-yt-error {
+    font-size: 12px;
+    color: var(--accent-error, #f44336);
+    padding: 4px 0;
   }
 
   @keyframes slideDown {

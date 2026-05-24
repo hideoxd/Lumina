@@ -61,6 +61,9 @@ export function toggleQueue() {
 /** Active playlist ID (when viewing a specific playlist) */
 export const activePlaylistId = writable<string | null>(null);
 
+/** Create playlist modal visible */
+export const showCreatePlaylist = writable(false);
+
 /** Navigate to view */
 export function navigateTo(view: ViewMode) {
   currentView.set(view);

@@ -39,7 +39,7 @@
   <div class="player-left">
     {#if $currentTrack}
       <div class="cover-art">
-        {#if $currentTrack.artwork_path && ($currentTrack.artwork_path.startsWith('data:') || $currentTrack.artwork_path.startsWith('blob:'))}
+        {#if $currentTrack.artwork_path}
           <img src={$currentTrack.artwork_path} alt="" />
         {:else}
           <div class="cover-placeholder">
