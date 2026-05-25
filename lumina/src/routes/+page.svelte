@@ -619,7 +619,7 @@
     }
   }
 
-  let allTracksForSelection = $derived(() => {
+  let allTracksForSelectionMap = $derived.by(() => {
     const map = new Map<string, Track>();
     for (const t of $allTracks) map.set(t.id, t);
     for (const t of addSongsYtResults) map.set(t.id, t);
@@ -629,7 +629,7 @@
   async function addSelectedTracksToPlaylist() {
     const pl = $selectedPlaylist;
     if (!pl || selectedAddTrackIds.size === 0) return;
-    const map = allTracksForSelection();
+    const map = allTracksForSelectionMap;
     try {
       for (const id of selectedAddTrackIds) {
         const track = map.get(id);
@@ -1843,6 +1843,7 @@
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }

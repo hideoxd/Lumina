@@ -65,15 +65,9 @@ export let lastDirectoryHandle: FileSystemDirectoryHandle | null = null;
 
 /* ── Utilities ────────────────────────────────────────────── */
 
-/** Deterministic-ish ID from a string (no external uuid dep). */
-function generateId(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return 'track-' + Math.abs(hash).toString(36);
+/** Generate a unique ID for a track. Uses crypto.randomUUID() available in all modern browsers. */
+function generateId(): string {
+  return 'track-' + crypto.randomUUID();
 }
 
 /** Get the extension from a filename (lowercase, no dot). */
@@ -278,7 +272,7 @@ export async function scanDirectoryHandle(
         file.name.replace(/\.[^.]+$/, '');
 
       tracks.push({
-        id: generateId(path),
+        id: generateId(),
         title,
         artist: ((tags?.artist as string) ?? 'Unknown Artist').trim(),
         album: ((tags?.album as string) ?? 'Unknown Album').trim(),
