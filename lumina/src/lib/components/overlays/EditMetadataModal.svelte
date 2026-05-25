@@ -3,6 +3,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import { updateTrackMetadata } from '$lib/commands/library';
   import { patchTrack } from '$lib/stores/library';
+  import { playerState } from '$lib/stores/player';
   import type { Track } from '$lib/types';
   let {
     track,
@@ -69,7 +70,7 @@
       await updateTrackMetadata(track.id, payload);
       console.log('[Lumina] Metadata saved successfully');
 
-      patchTrack(track.id, {
+      const updatedFields = {
         title,
         artist,
         album,
@@ -82,7 +83,17 @@
         publisher: publisher || null,
         comments: comments || null,
         artwork_path: artworkPath || null,
-      } as Partial<Track>);
+      } as Partial<Track>;
+
+      patchTrack(track.id, updatedFields);
+
+      playerState.update((s) => {
+        if (s.currentTrack?.id === track.id) {
+          return { ...s, currentTrack: { ...s.currentTrack, ...updatedFields } as Track };
+        }
+        return s;
+      });
+
       onClose();
     } catch (e: any) {
       console.error('Failed to save metadata', e);

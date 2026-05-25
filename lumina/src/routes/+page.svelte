@@ -521,13 +521,10 @@
 
   // ── Add Songs to Playlist Panel ──
   let addSongsOpen = $state(false);
-  let addSongsTab = $state<'tracks' | 'albums' | 'youtube'>('tracks');
-  let addSongsFilter = $state('');
-  let addSongsYtQuery = $state('');
+  let addSongsQuery = $state('');
   let addSongsYtResults = $state<Track[]>([]);
   let addSongsYtLoading = $state(false);
   let addSongsYtError = $state('');
-  let expandedAlbums = $state<Set<string>>(new Set());
 
   let selectedAddTrackIds = $state<Set<string>>(new Set());
 
@@ -537,24 +534,11 @@
     selectedAddTrackIds = next;
   }
 
-  function toggleAlbumExpand(albumKey: string) {
-    const next = new Set(expandedAlbums);
-    if (next.has(albumKey)) next.delete(albumKey); else next.add(albumKey);
-    expandedAlbums = next;
-  }
-
-  function getAlbumTracks(albumKey: string): Track[] {
-    return $allTracks.filter(t => `${t.album}::${t.album_artist ?? t.artist}` === albumKey);
-  }
-
   function openAddSongs() {
     addSongsOpen = true;
-    addSongsTab = 'tracks';
-    addSongsFilter = '';
-    addSongsYtQuery = '';
+    addSongsQuery = '';
     addSongsYtResults = [];
     addSongsYtError = '';
-    expandedAlbums = new Set();
     selectedAddTrackIds = new Set();
   }
 
@@ -562,8 +546,18 @@
     addSongsOpen = false;
   }
 
-  async function addSearchYoutubeToPlaylist() {
-    if (!addSongsYtQuery.trim()) return;
+  let addSongsLibResults = $derived(
+    addSongsQuery
+      ? $allTracks.filter(t =>
+          t.title.toLowerCase().includes(addSongsQuery.toLowerCase()) ||
+          t.artist.toLowerCase().includes(addSongsQuery.toLowerCase()) ||
+          t.album.toLowerCase().includes(addSongsQuery.toLowerCase())
+        )
+      : []
+  );
+
+  async function addSongsSearchYoutube() {
+    if (!addSongsQuery.trim()) return;
     const apiKey = $youtubeApiKeyStore;
     if (!hasValidApiKey(apiKey)) {
       addSongsYtError = 'YouTube API key not configured.';
@@ -572,7 +566,7 @@
     addSongsYtLoading = true;
     addSongsYtError = '';
     try {
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=25&q=${encodeURIComponent(addSongsYtQuery)}&type=video&key=${apiKey}`;
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=25&q=${encodeURIComponent(addSongsQuery)}&type=video&key=${apiKey}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.error) throw new Error(data.error.message || 'Search failed');
@@ -625,27 +619,30 @@
     }
   }
 
-  async function addTrackToCurrentPlaylist(track: Track) {
+  let allTracksForSelection = $derived(() => {
+    const map = new Map<string, Track>();
+    for (const t of $allTracks) map.set(t.id, t);
+    for (const t of addSongsYtResults) map.set(t.id, t);
+    return map;
+  });
+
+  async function addSelectedTracksToPlaylist() {
     const pl = $selectedPlaylist;
-    if (!pl) return;
+    if (!pl || selectedAddTrackIds.size === 0) return;
+    const map = allTracksForSelection();
     try {
-      await insertTrack(track);
-      await addTrackToPlaylist(pl.id, track.id);
+      for (const id of selectedAddTrackIds) {
+        const track = map.get(id);
+        if (!track) continue;
+        await insertTrack(track);
+        await addTrackToPlaylist(pl.id, track.id);
+      }
       await refreshPlaylists();
+      selectedAddTrackIds = new Set();
     } catch (e) {
-      console.error('[lumina] Failed to add track to playlist:', e);
+      console.error('[lumina] Failed to add tracks to playlist:', e);
     }
   }
-
-  let addSongsFilteredTracks = $derived(
-    addSongsFilter
-      ? $allTracks.filter(t =>
-          t.title.toLowerCase().includes(addSongsFilter.toLowerCase()) ||
-          t.artist.toLowerCase().includes(addSongsFilter.toLowerCase()) ||
-          t.album.toLowerCase().includes(addSongsFilter.toLowerCase())
-        )
-      : $allTracks
-  );
 </script>
 
 {#if $miniPlayerMode}
@@ -1138,71 +1135,77 @@
         </button>
       </div>
 
-      <div class="add-songs-tabs">
-        <button class="add-songs-tab" class:active={addSongsTab === 'tracks'} onclick={() => addSongsTab = 'tracks'}>All Tracks</button>
-        <button class="add-songs-tab" class:active={addSongsTab === 'albums'} onclick={() => addSongsTab = 'albums'}>Albums</button>
-        <button class="add-songs-tab" class:active={addSongsTab === 'youtube'} onclick={() => addSongsTab = 'youtube'}>YouTube Search</button>
+      <div class="add-songs-search-row">
+        <div class="add-songs-search-bar">
+          <Icon name="search" size={13} color="var(--text-tertiary)" />
+          <input
+            type="text"
+            class="add-songs-search-input"
+            placeholder="Search tracks &amp; YouTube…"
+            bind:value={addSongsQuery}
+            onkeydown={(e) => { if (e.key === 'Enter') void addSongsSearchYoutube(); }}
+          />
+          {#if addSongsQuery}
+            <button class="add-songs-search-clear" onclick={() => { addSongsQuery = ''; addSongsYtResults = []; addSongsYtError = ''; }}>
+              <Icon name="x" size={10} />
+            </button>
+          {/if}
+          <button class="add-songs-yt-btn" onclick={() => void addSongsSearchYoutube()} disabled={addSongsYtLoading} title="Search YouTube">
+            {addSongsYtLoading ? '…' : 'YT'}
+          </button>
+        </div>
       </div>
 
       <div class="add-songs-body">
-        {#if addSongsTab === 'tracks'}
-          <input type="text" class="save-picker-input" placeholder="Filter tracks…" bind:value={addSongsFilter} />
+        {#if addSongsLibResults.length > 0}
+          <div class="add-songs-section-header">From Library</div>
           <div class="add-songs-tracklist">
-            {#each addSongsFilteredTracks as track}
-              <div class="add-songs-track">
+            {#each addSongsLibResults as track}
+              <div class="add-songs-track" onclick={() => toggleAddTrackSelection(track.id)} role="button" tabindex="0" onkeydown={(e) => { if (e.key === 'Enter') toggleAddTrackSelection(track.id); }}>
+                <span class="add-songs-check" class:checked={selectedAddTrackIds.has(track.id)}></span>
                 <div class="add-songs-track-info">
                   <span class="truncate">{track.title}</span>
                   <span class="add-songs-track-artist truncate">{track.artist}</span>
                 </div>
-                <button class="add-songs-add-btn" onclick={() => void addTrackToCurrentPlaylist(track)} title="Add to playlist">+</button>
-              </div>
-            {/each}
-          </div>
-        {:else if addSongsTab === 'albums'}
-          <div class="add-songs-tracklist">
-            {#each $albums as album}
-              {@const albumKey = album.id}
-              <div class="add-songs-album">
-                <button class="add-songs-album-header" onclick={() => toggleAlbumExpand(albumKey)}>
-                  <Icon name="chevron-right" size={12} />
-                  <span class="truncate">{album.title}</span>
-                  <span class="add-songs-album-artist truncate">{album.artist}</span>
-                </button>
-                {#if expandedAlbums.has(albumKey)}
-                  {#each getAlbumTracks(albumKey) as track}
-                    <div class="add-songs-track" style="padding-left:36px">
-                      <div class="add-songs-track-info">
-                        <span class="truncate">{track.title}</span>
-                      </div>
-                      <button class="add-songs-add-btn" onclick={() => void addTrackToCurrentPlaylist(track)} title="Add to playlist">+</button>
-                    </div>
-                  {/each}
+                {#if track.duration > 0}
+                  <span class="add-songs-duration">{formatTime(track.duration)}</span>
                 {/if}
               </div>
             {/each}
           </div>
-        {:else if addSongsTab === 'youtube'}
-          <div class="add-songs-yt-row">
-            <input type="text" class="save-picker-input" placeholder="Search YouTube…" bind:value={addSongsYtQuery} onkeydown={(e) => { if (e.key === 'Enter') void addSearchYoutubeToPlaylist(); }} />
-            <button class="add-songs-yt-btn" onclick={() => void addSearchYoutubeToPlaylist()} disabled={addSongsYtLoading}>
-              {addSongsYtLoading ? '…' : 'Search'}
-            </button>
-          </div>
-          {#if addSongsYtError}
-            <p class="add-songs-yt-error">{addSongsYtError}</p>
-          {/if}
+        {:else if addSongsQuery && !addSongsYtLoading && addSongsYtResults.length === 0 && !addSongsYtError}
+          <p class="add-songs-empty">No matching tracks in your library.</p>
+        {/if}
+
+        {#if addSongsYtError}
+          <p class="add-songs-yt-error">{addSongsYtError}</p>
+        {/if}
+
+        {#if addSongsYtResults.length > 0}
+          {#if addSongsLibResults.length > 0}<div class="save-picker-divider" style="margin:6px 0"></div>{/if}
+          <div class="add-songs-section-header">YouTube Results</div>
           <div class="add-songs-tracklist">
             {#each addSongsYtResults as track}
-              <div class="add-songs-track">
+              <div class="add-songs-track" onclick={() => toggleAddTrackSelection(track.id)} role="button" tabindex="0" onkeydown={(e) => { if (e.key === 'Enter') toggleAddTrackSelection(track.id); }}>
+                <span class="add-songs-check" class:checked={selectedAddTrackIds.has(track.id)}></span>
                 <div class="add-songs-track-info">
                   <span class="truncate">{track.title}</span>
                   <span class="add-songs-track-artist truncate">{track.artist}</span>
                 </div>
-                <button class="add-songs-add-btn" onclick={() => void addTrackToCurrentPlaylist(track)} title="Add to playlist">+</button>
+                {#if track.duration > 0}
+                  <span class="add-songs-duration">{formatTime(track.duration)}</span>
+                {/if}
               </div>
             {/each}
           </div>
         {/if}
+      </div>
+      <div class="save-picker-divider" style="margin:8px 0"></div>
+      <div class="add-songs-bottom">
+        <span class="add-songs-selected-count">{selectedAddTrackIds.size} selected</span>
+        <button class="save-picker-create" onclick={() => void addSelectedTracksToPlaylist()} disabled={selectedAddTrackIds.size === 0}>
+          Add Selected
+        </button>
       </div>
     </div>
   </div>
@@ -2172,35 +2175,60 @@
     flex-direction: column;
   }
 
-  .add-songs-tabs {
+  .add-songs-search-row {
     display: flex;
-    gap: 2px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 8px;
-    padding: 3px;
-    margin: 12px 0;
+    align-items: center;
   }
 
-  .add-songs-tab {
+  .add-songs-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex: 1;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
+    height: 36px;
+    padding: 0 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    transition: all 0.15s ease;
+  }
+
+  .add-songs-search-bar:focus-within {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.14);
+  }
+
+  .add-songs-search-input {
+    flex: 1;
     background: transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.12s;
-  }
-
-  .add-songs-tab:hover {
+    border: none;
+    outline: none;
     color: var(--text-primary);
+    font-size: 13px;
+    min-width: 0;
   }
 
-  .add-songs-tab.active {
+  .add-songs-search-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .add-songs-search-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
     background: rgba(255,255,255,0.08);
-    color: var(--text-primary);
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    transition: background 0.12s;
+  }
+
+  .add-songs-search-clear:hover {
+    background: rgba(255,255,255,0.14);
   }
 
   .add-songs-body {
@@ -2208,15 +2236,23 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     min-height: 0;
+  }
+
+  .add-songs-section-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    padding: 4px 8px 2px;
   }
 
   .add-songs-tracklist {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    overflow-y: auto;
   }
 
   .add-songs-track {
@@ -2225,11 +2261,36 @@
     gap: 8px;
     padding: 6px 8px;
     border-radius: 6px;
+    cursor: pointer;
     transition: background 0.1s;
   }
 
   .add-songs-track:hover {
     background: rgba(255,255,255,0.03);
+  }
+
+  .add-songs-check {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--text-tertiary);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+  }
+
+  .add-songs-check.checked {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+  }
+
+  .add-songs-check.checked::after {
+    content: '✓';
+    font-size: 10px;
+    color: #000;
+    font-weight: 700;
   }
 
   .add-songs-track-info {
@@ -2247,66 +2308,35 @@
     color: var(--text-tertiary);
   }
 
-  .add-songs-add-btn {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    border: none;
-    background: var(--accent-primary);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.12s;
+  .add-songs-duration {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }
 
-  .add-songs-track:hover .add-songs-add-btn {
-    opacity: 1;
-  }
-
-  .add-songs-add-btn:hover {
-    filter: brightness(1.2);
-  }
-
-  .add-songs-album {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .add-songs-album-header {
+  .add-songs-bottom {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border: none;
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border-radius: 6px;
-    text-align: left;
-    transition: background 0.1s;
+    justify-content: space-between;
+    gap: 12px;
   }
 
-  .add-songs-album-header:hover {
-    background: rgba(255,255,255,0.03);
-  }
-
-  .add-songs-album-artist {
-    font-size: 11px;
+  .add-songs-selected-count {
+    font-size: 12px;
     color: var(--text-tertiary);
   }
 
-  .add-songs-yt-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  .add-songs-empty {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .add-songs-panel .save-picker-create,
+  .add-songs-panel .add-songs-yt-btn {
+    color: #000;
   }
 
   .add-songs-yt-btn {
@@ -2314,7 +2344,7 @@
     background: var(--accent-primary);
     border: none;
     border-radius: 8px;
-    color: #fff;
+    color: #000;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;

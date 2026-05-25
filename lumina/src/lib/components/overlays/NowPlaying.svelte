@@ -10,6 +10,20 @@
   let progressPercent = $derived(
     $playerState.duration > 0 ? ($playerState.position / $playerState.duration) * 100 : 0
   );
+  let fileName = $derived(
+    $currentTrack?.file_path ? $currentTrack.file_path.split(/[/\\]/).pop() ?? '' : ''
+  );
+
+  let titleBoxW = $state(0);
+  let titleW = $state(0);
+  let subBoxW = $state(0);
+  let subW = $state(0);
+  let fileBoxW = $state(0);
+  let fileW = $state(0);
+
+  let titleOverflows = $derived(titleW > titleBoxW);
+  let subOverflows = $derived(subW > subBoxW);
+  let fileOverflows = $derived(fileW > fileBoxW);
 
   $effect(() => {
     const filename = $currentTrack?.artwork_path;
@@ -94,14 +108,44 @@
       </div>
 
       <div class="fs-info">
-        <h1 class="fs-title truncate">{$currentTrack?.title ?? 'Nothing playing'}</h1>
-        <p class="fs-subtitle truncate">
-          {$currentTrack?.artist ?? '—'}
-          {#if $currentTrack?.album}
-            <span class="fs-dot">·</span>
-            {$currentTrack.album}
-          {/if}
-        </p>
+        <div class="marquee" bind:clientWidth={titleBoxW}>
+          <div class="marquee-track" class:scrolling={titleOverflows} bind:clientWidth={titleW}>
+            <span class="fs-title">{$currentTrack?.title ?? 'Nothing playing'}</span>
+            {#if titleOverflows}
+              <span class="fs-title">{$currentTrack?.title ?? 'Nothing playing'}</span>
+            {/if}
+          </div>
+        </div>
+        <div class="marquee" bind:clientWidth={subBoxW}>
+          <div class="marquee-track" class:scrolling={subOverflows} bind:clientWidth={subW}>
+            <span class="fs-subtitle">
+              {$currentTrack?.artist ?? '—'}
+              {#if $currentTrack?.album}
+                <span class="fs-dot">·</span>
+                {$currentTrack.album}
+              {/if}
+            </span>
+            {#if subOverflows}
+              <span class="fs-subtitle">
+                {$currentTrack?.artist ?? '—'}
+                {#if $currentTrack?.album}
+                  <span class="fs-dot">·</span>
+                  {$currentTrack.album}
+                {/if}
+              </span>
+            {/if}
+          </div>
+        </div>
+        {#if fileName}
+          <div class="marquee" bind:clientWidth={fileBoxW}>
+            <div class="marquee-track" class:scrolling={fileOverflows} bind:clientWidth={fileW}>
+              <span class="fs-filename">{fileName}</span>
+              {#if fileOverflows}
+                <span class="fs-filename">{fileName}</span>
+              {/if}
+            </div>
+          </div>
+        {/if}
 
         <!-- Progress bar -->
         <div class="fs-progress-row">
@@ -387,6 +431,51 @@
   .fs-dot {
     margin: 0 8px;
     color: rgba(255, 255, 255, 0.3);
+  }
+
+  .fs-filename {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+    font-family: monospace;
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  /* ── Marquee / rolling text ── */
+  .marquee {
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .marquee-track {
+    display: inline-flex;
+    white-space: nowrap;
+    gap: 0;
+  }
+
+  .marquee-track.scrolling {
+    will-change: transform;
+    animation: marqueeScroll 15s linear infinite;
+  }
+
+  .marquee-track.scrolling .fs-title::after,
+  .marquee-track.scrolling .fs-subtitle::after,
+  .marquee-track.scrolling .fs-filename::after {
+    content: '   \00B7   ';
+    white-space: pre;
+    opacity: 0.4;
+  }
+
+  .marquee-track.scrolling .fs-title:last-child::after,
+  .marquee-track.scrolling .fs-subtitle:last-child::after,
+  .marquee-track.scrolling .fs-filename:last-child::after {
+    content: none;
+  }
+
+  @keyframes marqueeScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 
   /* Progress */
