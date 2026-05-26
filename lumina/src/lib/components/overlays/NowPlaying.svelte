@@ -211,7 +211,7 @@
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.85);
   }
 
   /* Topbar */
@@ -296,7 +296,7 @@
     z-index: 2;
     border-radius: 12px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.05);
+    background: #000;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
 
@@ -313,6 +313,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #000;
   }
 
   /* ── Vinyl disc (behind cover, shifted right) ── */
@@ -365,6 +366,7 @@
     transform: translate(-50%, -50%);
     border-radius: 50%;
     overflow: hidden;
+    background: #000;
     border: 2px solid rgba(255, 255, 255, 0.08);
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
     z-index: 2;
@@ -383,7 +385,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.03);
+    background: #000;
   }
 
   /* Spindle hole */
