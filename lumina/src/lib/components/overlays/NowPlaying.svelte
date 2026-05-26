@@ -50,8 +50,12 @@
 
   function onKeydown(e: KeyboardEvent) {
     if (!$nowPlayingFullscreen) return;
-    if (e.key === 'Escape') close();
-    if (e.key === ' ') { e.preventDefault(); void togglePlayPause(); }
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key === ' ' || e.key === 'k') { e.preventDefault(); void togglePlayPause(); return; }
+    if (e.key === 'ArrowRight' && $playerState.duration > 0) { e.preventDefault(); seekToSeconds($playerState.position + 5); return; }
+    if (e.key === 'ArrowLeft' && $playerState.duration > 0) { e.preventDefault(); seekToSeconds($playerState.position - 5); return; }
+    if (e.key === 'n') { e.preventDefault(); void playNext(); return; }
+    if (e.key === 'p') { e.preventDefault(); void playPrevious(); return; }
   }
 
   function handleProgressClick(e: MouseEvent) {
@@ -136,6 +140,7 @@
                 <span>{formatTime($playerState.duration)}</span>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -244,6 +249,10 @@
 
         <div class="fs-hints">
           <span><kbd>Space</kbd> Play/Pause</span>
+          <span><kbd>k</kbd> Play/Pause</span>
+          <span><kbd>←</kbd><kbd>→</kbd> Seek</span>
+          <span><kbd>n</kbd> Next</span>
+          <span><kbd>p</kbd> Prev</span>
           <span><kbd>Esc</kbd> Close</span>
         </div>
       </div>
@@ -929,4 +938,5 @@
     color: rgba(255, 255, 255, 0.3);
     font-variant-numeric: tabular-nums;
   }
+
 </style>

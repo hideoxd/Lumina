@@ -107,9 +107,9 @@ function parseLrc(lrc: string): LyricLine[] {
  * Vowel signs attach to preceding consonants, anusvara → 'n'.
  */
 
-// Devanagari block: U+0900–U+097F
+// Devanagari block: U+0900–U+097F, with nuqta extension U+0958–U+095F
 const DEVANAGARI_RE = /[\u0900-\u097F]/;
-const CONSONANT_RE = /[\u0915-\u0939]/;  // क to ह
+const CONSONANT_RE = /[\u0915-\u0939\u0958-\u095F]/;  // क to ह + nuqta
 
 function hasDevanagari(text: string): boolean {
   return DEVANAGARI_RE.test(text);
@@ -125,8 +125,10 @@ const CONSONANTS: Record<string, string> = {
   'प': 'p', 'फ': 'ph', 'ब': 'b', 'भ': 'bh', 'म': 'm',
   'य': 'y', 'र': 'r', 'ल': 'l', 'व': 'v',
   'श': 'sh', 'ष': 'sh', 'स': 's', 'ह': 'h',
-  //  ळ  is U+0933, not common in Hindi but covered
   'ळ': 'l',
+  // Nuqta chars (U+0958–U+095F)
+  'क़': 'q', 'ख़': 'kh', 'ग़': 'g', 'ज़': 'z',
+  'ड़': 'r', 'ढ़': 'rh', 'फ़': 'f', 'य़': 'y',
 };
 
 const VOWELS: Record<string, string> = {
@@ -158,8 +160,8 @@ function transliterateText(text: string): string {
       continue;
     }
 
-    // ── Consonant ──
-    if (code >= 0x0915 && code <= 0x0939) {
+    // ── Consonant (क to ह + nuqta) ──
+    if ((code >= 0x0915 && code <= 0x0939) || (code >= 0x0958 && code <= 0x095F)) {
       const base = CONSONANTS[ch] ?? '?';
       const next = i + 1 < text.length ? text[i + 1] : '';
 
@@ -226,6 +228,18 @@ function transliterateText(text: string): string {
       continue;
     }
 
+    // ── Nukta (़) U+093C — combining dot below ──
+    if (ch === '़') {
+      const last = out.pop() ?? '';
+      const map: Record<string, string> = {
+        'k': 'q', 'kh': 'kh', 'g': 'g', 'j': 'z', 'ph': 'f',
+        'd': 'r', 'dh': 'rh', 'y': 'y',
+      };
+      out.push(map[last] ?? last);
+      i++;
+      continue;
+    }
+
     // ── Visarga (ः) U+0903 ──
     if (ch === 'ः') {
       out.push('h');
@@ -274,6 +288,10 @@ function transliterateText(text: string): string {
   // Phase 2: Hindi schwa syncope — delete inherent 'a' at word boundaries
   // (Hindi word-final schwa is silent, e.g., hama → ham, raama → raam)
   result = result.replace(/([bcdfghjklmnpqrstvwxyz])a(?=[\s,.\!?;:)\]'"\u0964\u0965]|$)/g, '$1');
+
+  // Special conjunct: ज्ञ (j + halant + ny = jny) → gy
+  // This is the standard Hindi romanization for ज्ञान → gyaan, अज्ञ → agya
+  result = result.replace(/jny/g, 'gy');
 
   return result;
 }

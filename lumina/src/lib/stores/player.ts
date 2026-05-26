@@ -35,56 +35,9 @@ export const progress = derived(playerState, ($ps) =>
 /** Volume level 0-1 */
 export const volume = derived(playerState, ($ps) => $ps.isMuted ? 0 : $ps.volume);
 
-/* ============================================================
-   Lightweight position ticker
-   ============================================================
-   Rodio doesn't expose a robust cross-platform playback position API.
-   Until we wire a native position callback/event from Rust, we keep the UI
-   progress buttery-smooth with a simple timer based on wall-clock time.
-*/
-
-let ticker: number | null = null;
-let lastTick = 0;
-
-function startTicker() {
-  if (ticker !== null) return;
-  lastTick = performance.now();
-  ticker = window.setInterval(() => {
-    const now = performance.now();
-    const dt = (now - lastTick) / 1000;
-    lastTick = now;
-
-    playerState.update((s) => {
-      if (!s.currentTrack) return s;
-      if (!s.isPlaying || s.isPaused || s.isStopped) return s;
-
-      // Always advance position — even without valid duration (0),
-      // so lyrics highlighting and progress work.
-      const hasDuration = Number.isFinite(s.duration) && s.duration > 0;
-      const nextPos = hasDuration ? Math.min(s.position + dt, s.duration) : s.position + dt;
-      const ended = hasDuration && nextPos >= s.duration;
-
-      return {
-        ...s,
-        position: nextPos,
-        isPlaying: ended ? false : s.isPlaying,
-        isStopped: ended ? true : s.isStopped,
-      };
-    });
-  }, 250);
-}
-
-function stopTicker() {
-  if (ticker === null) return;
-  window.clearInterval(ticker);
-  ticker = null;
-}
-
-playerState.subscribe((s) => {
-  const shouldRun = !!s.currentTrack && s.isPlaying && !s.isPaused && !s.isStopped;
-  if (shouldRun) startTicker();
-  else stopTicker();
-});
+/* Position is polled from the audio engine's getCurrentTime() every 200ms
+   (see commands/audio.ts — positionPoller). A real-time fallback via the
+   engine's onTimeUpdate callback also updates position. */
 
 /** Format time in mm:ss */
 export function formatTime(seconds: number): string {

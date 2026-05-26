@@ -39,6 +39,42 @@ function ensureEngineCallbacks(): void {
   };
 }
 
+/* ── Position poller ─────────────────────────────────────────────
+ * Reads the actual audio position directly from the engine every 200ms.
+ * This is the PRIMARY position source — more reliable than relying
+ * solely on browser `timeupdate` events which can be delayed or
+ * fire inconsistently (background tabs, slow decodes, etc.).
+ */
+let positionPoller: number | null = null;
+
+function startPositionPoller(): void {
+  if (positionPoller !== null) return;
+  positionPoller = window.setInterval(() => {
+    const realTime = getAudioEngine().getCurrentTime();
+    // Guard against NaN (edge case on audio element reset)
+    if (!Number.isFinite(realTime)) return;
+    // Only overwrite position when actively playing — seekToSeconds etc.
+    // set their own position when stalled.
+    playerState.update((s) => {
+      if (!s.isPlaying || s.isPaused || s.isStopped) return s;
+      return { ...s, position: realTime };
+    });
+  }, 200);
+}
+
+function stopPositionPoller(): void {
+  if (positionPoller === null) return;
+  window.clearInterval(positionPoller);
+  positionPoller = null;
+}
+
+// Start/stop poller in sync with playback state
+playerState.subscribe((s) => {
+  const shouldRun = !!s.currentTrack && s.isPlaying && !s.isPaused && !s.isStopped;
+  if (shouldRun) startPositionPoller();
+  else stopPositionPoller();
+});
+
 export async function playFile(path: string): Promise<void> {
   ensureEngineCallbacks();
   const engine = getAudioEngine();
