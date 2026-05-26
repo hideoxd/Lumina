@@ -57,10 +57,12 @@ function startTicker() {
     playerState.update((s) => {
       if (!s.currentTrack) return s;
       if (!s.isPlaying || s.isPaused || s.isStopped) return s;
-      if (!Number.isFinite(s.duration) || s.duration <= 0) return s;
 
-      const nextPos = Math.min(s.position + dt, s.duration);
-      const ended = nextPos >= s.duration;
+      // Always advance position — even without valid duration (0),
+      // so lyrics highlighting and progress work.
+      const hasDuration = Number.isFinite(s.duration) && s.duration > 0;
+      const nextPos = hasDuration ? Math.min(s.position + dt, s.duration) : s.position + dt;
+      const ended = hasDuration && nextPos >= s.duration;
 
       return {
         ...s,

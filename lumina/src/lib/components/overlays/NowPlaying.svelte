@@ -7,7 +7,9 @@
   import { currentTrack, isPlaying, playerState, formatTime } from '$lib/stores/player';
   import { playNext, playPrevious, togglePlayPause, seekToSeconds } from '$lib/stores/queue';
   import { getArtworkUrl } from '$lib/utils/artwork';
+  import LyricsPanel from '$lib/components/overlays/LyricsPanel.svelte';
 
+  let showLyrics = $state(false);
   let artworkUrl = $state<string | null>(null);
   let progressPercent = $derived(
     $playerState.duration > 0 ? ($playerState.position / $playerState.duration) * 100 : 0
@@ -77,11 +79,70 @@
         <Icon name="chevron-down" size={20} />
       </button>
       <span class="fs-label">Now Playing</span>
-      <div style="width:40px"></div>
+      <button class="fs-lyrics-btn" class:active={showLyrics} onclick={() => showLyrics = !showLyrics} title={showLyrics ? 'Show artwork' : 'Show lyrics'}>
+        <Icon name="mic" size={16} />
+      </button>
     </div>
 
     <!-- Center content -->
-    <div class="fs-content">
+    <div class="fs-content" class:lyrics-mode={showLyrics}>
+      {#if showLyrics}
+        <!-- Lyrics mode: sidebar + full lyrics panel -->
+        <div class="fs-lyrics-sidebar">
+          <div class="fs-ls-card">
+            <!-- Brand -->
+            <div class="fs-ls-brand">
+              <Icon name="music" size={16} color="rgba(255,255,255,0.3)" />
+              <span>Lumina</span>
+            </div>
+
+            <!-- Artwork -->
+            <div class="fs-ls-artwork">
+              {#if artworkUrl}
+                <img src={artworkUrl} alt="" />
+              {:else}
+                <div class="fs-ls-art-ph">
+                  <Icon name="music" size={28} color="rgba(255,255,255,0.15)" />
+                </div>
+              {/if}
+            </div>
+
+            <!-- Compact track info -->
+            <div class="fs-ls-info">
+              <div class="fs-ls-title">{$currentTrack?.title ?? 'Nothing playing'}</div>
+              <div class="fs-ls-artist">{$currentTrack?.artist ?? '—'}</div>
+            </div>
+
+            <!-- Controls -->
+            <div class="fs-ls-controls">
+              <button class="fs-ls-ctrl" onclick={() => void playPrevious()}>
+                <Icon name="skip-back" size={18} />
+              </button>
+              <button class="fs-ls-play" onclick={() => void togglePlayPause()}>
+                <Icon name={$isPlaying ? 'pause' : 'play'} size={20} />
+              </button>
+              <button class="fs-ls-ctrl" onclick={() => void playNext()}>
+                <Icon name="skip-forward" size={18} />
+              </button>
+            </div>
+
+            <!-- Progress/seeker -->
+            <div class="fs-ls-progress">
+              <div class="fs-ls-progress-track" role="slider" tabindex="0" aria-valuenow={$playerState.position} onclick={handleProgressClick} onkeydown={(e) => { if (e.key === 'ArrowRight') seekToSeconds($playerState.position + 5); if (e.key === 'ArrowLeft') seekToSeconds($playerState.position - 5); }}>
+                <div class="fs-ls-progress-fill" style="width: {progressPercent}%"></div>
+              </div>
+              <div class="fs-ls-times">
+                <span>{formatTime($playerState.position)}</span>
+                <span>{formatTime($playerState.duration)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fs-lyrics-main">
+          <LyricsPanel />
+        </div>
+      {:else}
       <div class="fs-disc-container">
         <div class="fs-disc-stack">
           <div class="fs-disc" class:playing={$isPlaying}>
@@ -186,6 +247,7 @@
           <span><kbd>Esc</kbd> Close</span>
         </div>
       </div>
+    {/if}
     </div>
   </div>
 {/if}
@@ -212,6 +274,14 @@
 
   .fs-overlay :global(.fs-disc-container) {
     animation: fsStaggerUp 0.55s 0.18s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fs-overlay :global(.fs-lyrics-sidebar) {
+    animation: fsStaggerUp 0.55s 0.18s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fs-overlay :global(.fs-lyrics-main) {
+    animation: fsStaggerFade 0.5s 0.25s both ease-out;
   }
 
   .fs-overlay :global(.fs-info) {
@@ -293,6 +363,36 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
+  .fs-lyrics-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    color: rgba(255, 255, 255, 0.4);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .fs-lyrics-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .fs-lyrics-btn.active {
+    color: var(--accent, #64b5f6);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .fs-lyrics-btn.active:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--accent, #90caf9);
+  }
+
   /* Content */
   .fs-content {
     position: relative;
@@ -318,6 +418,28 @@
     justify-content: center;
     align-items: center;
     overflow: visible;
+  }
+
+  /* Lyrics mode overrides */
+  .fs-content.lyrics-mode {
+    grid-template-columns: 1fr 3fr;
+    gap: 0;
+    padding: 0;
+  }
+
+  @media (max-width: 900px) {
+    .fs-content.lyrics-mode {
+      grid-template-columns: 1fr;
+      padding: 12px 16px;
+    }
+  }
+
+  .fs-lyrics-main {
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
   }
 
   .fs-disc-stack {
@@ -637,5 +759,174 @@
     font-size: 10px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* ═══════════════════════════════════════
+     Lyrics Sidebar
+     ═══════════════════════════════════════ */
+  /* ── Sidebar wrapper: centers the floating card ── */
+  .fs-lyrics-sidebar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 24px;
+  }
+
+  /* ── Floating glass card ── */
+  .fs-ls-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 28px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .fs-ls-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  .fs-ls-artwork {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    background: #000;
+  }
+
+  .fs-ls-artwork img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .fs-ls-art-ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+
+  .fs-ls-info {
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .fs-ls-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .fs-ls-artist {
+    font-size: 12px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+  }
+
+  .fs-ls-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .fs-ls-ctrl {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .fs-ls-ctrl:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .fs-ls-play {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .fs-ls-play:hover {
+    transform: scale(1.06);
+  }
+
+  .fs-ls-play:active {
+    transform: scale(0.96);
+  }
+
+  .fs-ls-progress {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .fs-ls-progress-track {
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .fs-ls-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.5);
+    transition: width 100ms linear;
+  }
+
+  .fs-ls-times {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.3);
+    font-variant-numeric: tabular-nums;
   }
 </style>
