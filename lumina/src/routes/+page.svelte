@@ -5,7 +5,7 @@
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
-  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, miniPlayerMode, settingsOpen, lastWindowSize, queuePanelOpen, showCreatePlaylist, navigateTo } from '$lib/stores/ui';
+  import { ambientEnabled, currentView, sidebarCollapsed, searchQuery, activePlaylistId, settingsOpen, queuePanelOpen, showCreatePlaylist, navigateTo } from '$lib/stores/ui';
   import { albums, artists, libraryLoading, scanProgress, trackCount, tracks as allTracks, visibleTracks, folderPermissionState } from '$lib/stores/library';
   import TrackList from '$lib/components/library/TrackList.svelte';
   import AlbumGrid from '$lib/components/library/AlbumGrid.svelte';
@@ -17,13 +17,13 @@
   import NowPlaying from '$lib/components/overlays/NowPlaying.svelte';
   import QueuePanel from '$lib/components/overlays/QueuePanel.svelte';
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { get } from 'svelte/store';
   import { addMusicFolderWithDialog, initLibraryListeners, refreshTracks, checkFolderPermission, requestFolderPermission, ensureFolderPermissionAtClick } from '$lib/controllers/library';
   import { playQueueIndex, setQueue, togglePlayPause, playNext, playPrevious, stopPlayback, queueState, addToQueueNext } from '$lib/stores/queue';
   import ContextMenu from '$lib/components/ui/ContextMenu.svelte';
   import type { Track, MenuItem } from '$lib/types';
-  import { currentTrack, isPlaying, volume, formatTime } from '$lib/stores/player';
-  import { getArtworkUrl } from '$lib/utils/artwork';
+  import { currentTrack, isPlaying, volume, formatTime, playerState } from '$lib/stores/player';
   import { youtubeApiKeyStore, hasValidApiKey } from '$lib/stores/api';
 
   // Reactive sidebar width for grid
@@ -92,73 +92,6 @@
 
   let visibleFavorites = $derived($visibleTracks.filter((t) => t.favorite));
 
-  let miniArtworkUrl = $state('');
-
-  $effect(() => {
-    const art = $currentTrack?.artwork_path;
-    if (!art) { miniArtworkUrl = ''; return; }
-    getArtworkUrl(art).then(url => { miniArtworkUrl = url; }).catch(() => { miniArtworkUrl = ''; });
-  });
-
-  let wasMiniMode = $state(false);
-
-  $effect(() => {
-    if ($miniPlayerMode && !wasMiniMode) {
-      void enterMiniPlayer();
-      queuePanelOpen.set(false);
-    }
-    wasMiniMode = $miniPlayerMode;
-  });
-
-  // ── Drag-and-drop & Floating State for Mini Player ──
-  let miniX = $state(20);
-  let miniY = $state(20);
-  let isDragging = $state(false);
-
-  onMount(() => {
-    // Initial position in bottom-right corner
-    miniX = window.innerWidth - 320 - 24;
-    miniY = window.innerHeight - 72 - 24;
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  });
-
-  function handleResize() {
-    if (miniX > window.innerWidth - 320) {
-      miniX = Math.max(0, window.innerWidth - 320 - 24);
-    }
-    if (miniY > window.innerHeight - 72) {
-      miniY = Math.max(0, window.innerHeight - 72 - 24);
-    }
-  }
-
-  function handleMouseDown(e: MouseEvent) {
-    const target = e.target as HTMLElement;
-    // Don't drag if clicking buttons, links, or standard control regions
-    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('textarea')) {
-      return;
-    }
-    isDragging = true;
-    const startX = e.clientX - miniX;
-    const startY = e.clientY - miniY;
-
-    function handleMouseMove(moveEvent: MouseEvent) {
-      miniX = Math.max(0, Math.min(window.innerWidth - 320, moveEvent.clientX - startX));
-      miniY = Math.max(0, Math.min(window.innerHeight - 72, moveEvent.clientY - startY));
-    }
-
-    function handleMouseUp() {
-      isDragging = false;
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    }
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  }
-
   async function handleRequestFolderPermission() {
     try {
       const granted = await requestFolderPermission();
@@ -168,17 +101,6 @@
     } catch (e) {
       console.error('[lumina] Failed to request folder permission:', e);
     }
-  }
-
-  async function enterMiniPlayer() {
-    miniPlayerMode.set(true);
-    // Center-ish bottom right corner positioning on entrance
-    miniX = window.innerWidth - 320 - 24;
-    miniY = window.innerHeight - 72 - 24;
-  }
-
-  async function exitMiniPlayer() {
-    miniPlayerMode.set(false);
   }
 
   async function handlePlayPlaylist(list: Track[], index: number) {
@@ -645,60 +567,6 @@
   }
 </script>
 
-{#if $miniPlayerMode}
-  <!-- Premium Glassmorphic Draggable Floating Mini Player -->
-  <div class="mini-player-overlay">
-    {#if miniArtworkUrl}
-      <div class="mini-player-backdrop-art" style="background-image: url({miniArtworkUrl})"></div>
-    {/if}
-    <div class="mini-player-backdrop-dim"></div>
-
-    <div 
-      class="mini-player-floating" 
-      style="left: {miniX}px; top: {miniY}px;" 
-      onmousedown={handleMouseDown}
-      role="presentation"
-    >
-      <div class="mini-drag-handle">
-        <Icon name="grid" size={10} color="rgba(255,255,255,0.4)" />
-      </div>
-
-      <div class="mini-art">
-        {#if miniArtworkUrl}
-          <img src={miniArtworkUrl} alt="" />
-        {:else}
-          <div class="mini-art-placeholder">
-            <Icon name="music" size={20} color="rgba(255,255,255,0.4)" />
-          </div>
-        {/if}
-      </div>
-      <div class="mini-body">
-        <div class="mini-info">
-          {#if $currentTrack}
-            <div class="mini-title truncate">{$currentTrack.title}</div>
-            <div class="mini-artist truncate">{$currentTrack.artist}</div>
-          {:else}
-            <div class="mini-title" style="opacity:0.5">No track</div>
-          {/if}
-        </div>
-        <div class="mini-controls">
-          <button class="mini-btn" onclick={() => void playPrevious()} title="Previous">
-            <Icon name="skip-back" size={13} />
-          </button>
-          <button class="mini-play-btn" onclick={() => void togglePlayPause()} title={$isPlaying ? 'Pause' : 'Play'}>
-            <Icon name={$isPlaying ? 'pause' : 'play'} size={15} />
-          </button>
-          <button class="mini-btn" onclick={() => void playNext()} title="Next">
-            <Icon name="skip-forward" size={13} />
-          </button>
-        </div>
-      </div>
-      <button class="mini-close" onclick={exitMiniPlayer} title="Exit mini player (restore window)">
-        <Icon name="x" size={11} />
-      </button>
-    </div>
-  </div>
-{:else}
 <div class="app-container">
   <!-- Sidebar -->
   <div class="app-sidebar">
@@ -715,6 +583,8 @@
     <!-- Main Content Area -->
     <main class="app-content">
       <div class="content-inner">
+        {#key $currentView}
+        <div in:fade={{ duration: 200 }}>
         {#if $folderPermissionState === 'stored_needs_permission'}
           <div class="permission-banner">
             <div class="permission-banner-content">
@@ -982,6 +852,8 @@
             {/if}
           </div>
         {/if}
+        </div>
+        {/key}
       </div>
     </main>
 
@@ -991,7 +863,6 @@
     </div>
   </div>
 </div>
-{/if}
 
 {#if savePickerVisible && saveTargetTrack}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -1425,206 +1296,6 @@
 
   .back-btn:hover {
     background: var(--bg-elevated);
-    color: var(--text-primary);
-  }
-
-  /* ====== Compact Mini Player ====== */
-  .mini-player-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 99999;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-
-  .mini-player-backdrop-art {
-    position: absolute;
-    top: -20px;
-    left: -20px;
-    right: -20px;
-    bottom: -20px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(40px) brightness(0.25);
-    z-index: 1;
-    pointer-events: none;
-    transition: background-image 0.5s ease;
-  }
-
-  .mini-player-backdrop-dim {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.65) 100%);
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  .mini-player-floating {
-    position: absolute;
-    width: 320px;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    background: rgba(20, 20, 20, 0.45);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    padding: 0 12px;
-    gap: 10px;
-    z-index: 3;
-    cursor: grab;
-    pointer-events: auto;
-    user-select: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .mini-player-floating:active {
-    cursor: grabbing;
-    border-color: rgba(255, 255, 255, 0.16);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-
-  .mini-drag-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    padding-right: 2px;
-    opacity: 0.3;
-    transition: opacity 0.2s;
-  }
-
-  .mini-player-floating:hover .mini-drag-handle {
-    opacity: 0.7;
-  }
-
-  .mini-art {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: var(--bg-primary);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  }
-
-  .mini-art img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .mini-art-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-primary);
-  }
-
-  .mini-body {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .mini-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .mini-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1.3;
-  }
-
-  .mini-artist {
-    font-size: 11px;
-    color: var(--text-secondary);
-    line-height: 1.3;
-  }
-
-  .mini-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  .mini-btn {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    color: var(--text-secondary);
-    border: none;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .mini-btn:hover {
-    color: var(--text-primary);
-    background: rgba(255,255,255,0.08);
-  }
-
-  .mini-play-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--text-primary);
-    color: var(--bg-primary);
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .mini-play-btn:hover {
-    transform: scale(1.08);
-  }
-
-  .mini-close {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    color: var(--text-tertiary);
-    border: none;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.15s ease;
-  }
-
-  .mini-close:hover {
-    background: rgba(255,255,255,0.08);
     color: var(--text-primary);
   }
 

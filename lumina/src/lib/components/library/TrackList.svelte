@@ -299,11 +299,13 @@
     color: var(--text-primary);
     text-align: left;
     cursor: default;
-    transition: background 0.1s ease;
+    border-left: 2px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
   }
 
   .row:hover {
     background: rgba(255, 255, 255, 0.04);
+    border-left-color: var(--accent-primary);
   }
 
   .row:not(:last-child) {

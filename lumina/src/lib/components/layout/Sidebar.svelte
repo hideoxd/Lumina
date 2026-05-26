@@ -24,6 +24,8 @@
     { id: 'tracks', label: 'All Tracks', icon: 'music', view: 'tracks' as ViewMode },
     { id: 'albums', label: 'Albums', icon: 'disc', view: 'albums' as ViewMode },
     { id: 'artists', label: 'Artists', icon: 'users', view: 'artists' as ViewMode },
+    { id: 'favorites', label: 'Favorites', icon: 'heart', view: 'favorites' as ViewMode },
+    { id: 'recent', label: 'Recently Played', icon: 'clock', view: 'recent' as ViewMode },
     { id: 'youtube', label: 'YouTube Search', icon: 'youtube', view: 'youtube' as ViewMode }
   ];
 </script>
@@ -59,11 +61,6 @@
         </button>
       </div>
       <nav class="nav-list">
-        <button class="nav-item" class:active={$currentView === 'favorites'} onclick={() => handleNavClick('favorites')}>
-          <Icon name="heart" size={16} />
-          <span class="nav-label">Favorites</span>
-        </button>
-        
         {#each $playlists as pl}
           <button
             class="nav-item"
@@ -185,18 +182,24 @@
     border: none;
     cursor: pointer;
     text-align: left;
-    transition: all 0.1s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
   }
 
   .nav-item:hover {
     color: var(--text-primary);
     background: var(--bg-secondary);
+    transform: translateX(2px);
+  }
+
+  .nav-item:active {
+    transform: translateX(0) scale(0.98);
   }
 
   .nav-item.active {
     background: var(--bg-elevated);
     color: var(--text-primary);
     font-weight: 500;
+    transform: none;
   }
 
   .nav-label {

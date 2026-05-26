@@ -108,10 +108,6 @@ export function setVolume(v: number) {
   playerState.update(s => ({ ...s, volume: v }));
 }
 
-export function toggleShuffle() {
-  playerState.update(s => ({ ...s, isShuffled: !s.isShuffled }));
-}
-
 export function toggleRepeat() {
   playerState.update(s => {
     const next = s.repeatMode === 'off' ? 'all' : s.repeatMode === 'all' ? 'one' : 'off';

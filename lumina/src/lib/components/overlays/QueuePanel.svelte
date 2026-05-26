@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade, fly } from 'svelte/transition';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
@@ -21,6 +22,19 @@
       close();
     }
   }
+
+  function removeFromQueue(index: number) {
+    queueState.update(qs => {
+      const newTracks = qs.tracks.filter((_, i) => i !== index);
+      let newIndex = qs.currentIndex;
+      if (index < qs.currentIndex) {
+        newIndex = qs.currentIndex - 1;
+      } else if (index === qs.currentIndex) {
+        newIndex = -1; // currently playing removed
+      }
+      return { ...qs, tracks: newTracks, currentIndex: newIndex >= newTracks.length ? -1 : newIndex };
+    });
+  }
 </script>
 
 {#if $queuePanelOpen}
@@ -29,10 +43,11 @@
     role="button"
     tabindex="0"
     aria-label="Close queue"
+    transition:fade={{ duration: 200 }}
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
   >
-    <div class="panel" role="dialog" aria-modal="true" aria-label="Queue">
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Queue" transition:fly={{ duration: 250, x: 40, opacity: 0 }}>
       <Card padding="lg" radius="2xl" class="surface">
         <div class="header">
           <div class="title">
@@ -54,16 +69,27 @@
             </div>
           {:else}
             {#each $queueState.tracks as t, i (t.id)}
-              <button
+              <div
                 class="item"
                 class:active={i === $queueState.currentIndex}
+                role="button"
+                tabindex="0"
                 onclick={() => void playQueueIndex(i)}
+                onkeydown={(e) => { if (e.key === 'Enter') void playQueueIndex(i); }}
                 title="Play"
               >
                 <span class="idx">{i + 1}</span>
                 <span class="name truncate">{t.title}</span>
                 <span class="artist truncate">{t.artist}</span>
-              </button>
+                <button
+                  class="item-remove"
+                  title="Remove from queue"
+                  onclick={(e) => { e.stopPropagation(); removeFromQueue(i); }}
+                  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); removeFromQueue(i); } }}
+                >
+                  <Icon name="x" size={12} />
+                </button>
+              </div>
             {/each}
           {/if}
         </div>
@@ -78,8 +104,6 @@
     inset: 0;
     z-index: var(--z-overlay);
     background: hsla(0, 0%, 0%, 0.35);
-
-    animation: fadeIn var(--duration-normal) var(--ease-out-quart) both;
   }
 
   .panel {
@@ -89,7 +113,6 @@
     bottom: var(--player-bar-height);
     width: min(420px, 92vw);
     padding: var(--space-4);
-    animation: slideInRight var(--duration-slow) var(--ease-out-expo) both;
   }
 
   :global(.surface) {
@@ -133,7 +156,7 @@
 
   .item {
     display: grid;
-    grid-template-columns: 34px 1fr 0.8fr;
+    grid-template-columns: 34px 1fr 0.8fr 28px;
     gap: var(--space-3);
     align-items: center;
     height: 40px;
@@ -142,6 +165,7 @@
     border: 1px solid transparent;
     color: var(--text-secondary);
     background: transparent;
+    cursor: pointer;
     transition:
       background var(--duration-fast) var(--ease-out-quart),
       border-color var(--duration-fast) var(--ease-out-quart),
@@ -158,6 +182,33 @@
     background: var(--accent-gradient-subtle);
     border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.22);
     color: var(--accent-primary);
+  }
+
+  .item-remove {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+  }
+
+  .item:hover .item-remove,
+  .item-remove:focus-visible {
+    opacity: 0.6;
+  }
+
+  .item-remove:hover {
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ef4444;
   }
 
   .idx {

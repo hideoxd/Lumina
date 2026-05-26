@@ -9,14 +9,74 @@ export const queueState = writable<QueueState>({
   tracks: [],
   currentIndex: -1,
   history: [],
+  originalOrder: null,
 });
+
+function fisherYatesShuffle(arr: Track[]): Track[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 export function setQueue(list: Track[], startIndex: number) {
   queueState.set({
     tracks: list,
     currentIndex: Math.max(0, Math.min(startIndex, list.length - 1)),
     history: [],
+    originalOrder: null,
   });
+  // Re-apply shuffle if player has shuffle enabled
+  const ps = get(playerState);
+  if (ps.isShuffled && list.length > 0) {
+    applyShuffle(list, Math.max(0, Math.min(startIndex, list.length - 1)));
+  }
+}
+
+export function toggleShuffle() {
+  const ps = get(playerState);
+  const qs = get(queueState);
+
+  if (ps.isShuffled) {
+    if (qs.originalOrder && qs.tracks.length > 0 && qs.currentIndex >= 0) {
+      const currentTrack = qs.tracks[qs.currentIndex];
+      const restoredIndex = qs.originalOrder.findIndex(t => t.id === currentTrack.id);
+      queueState.set({
+        ...qs,
+        tracks: qs.originalOrder,
+        currentIndex: restoredIndex >= 0 ? restoredIndex : 0,
+        originalOrder: null,
+      });
+    } else {
+      queueState.set({
+        ...qs,
+        tracks: qs.originalOrder ?? qs.tracks,
+        originalOrder: null,
+      });
+    }
+    playerState.update(s => ({ ...s, isShuffled: false }));
+  } else {
+    if (qs.tracks.length > 0) {
+      applyShuffle(qs.tracks, qs.currentIndex);
+    }
+    playerState.update(s => ({ ...s, isShuffled: true }));
+  }
+}
+
+function applyShuffle(tracks: Track[], keepIndex: number) {
+  const original = [...tracks];
+  const shuffled = [...tracks];
+  const [current] = shuffled.splice(keepIndex, 1);
+  fisherYatesShuffle(shuffled);
+  shuffled.unshift(current);
+
+  queueState.update(qs => ({
+    ...qs,
+    tracks: shuffled,
+    currentIndex: 0,
+    originalOrder: original,
+  }));
 }
 
 export function getCurrentQueueTrack(): Track | null {
@@ -51,7 +111,7 @@ export async function playQueueIndex(index: number): Promise<void> {
   void markTrackPlayed(track.id).catch(() => {});
 
   queueState.set({
-    tracks: qs.tracks,
+    ...qs,
     currentIndex: index,
     history: qs.currentIndex >= 0 ? [...qs.history, qs.tracks[qs.currentIndex]].filter(Boolean) : qs.history,
   });
@@ -70,14 +130,34 @@ export async function playQueueIndex(index: number): Promise<void> {
 export async function playNext(): Promise<void> {
   const qs = get(queueState);
   if (qs.tracks.length === 0) return;
-  const next = Math.min(qs.currentIndex + 1, qs.tracks.length - 1);
+  const ps = get(playerState);
+  const isLast = qs.currentIndex >= qs.tracks.length - 1;
+
+  let next: number;
+  if (ps.repeatMode === 'all' && isLast) {
+    next = 0; // wrap around
+  } else if (ps.repeatMode === 'off' && isLast) {
+    return; // stop at end
+  } else {
+    next = qs.currentIndex + 1;
+  }
   await playQueueIndex(next);
 }
 
 export async function playPrevious(): Promise<void> {
   const qs = get(queueState);
   if (qs.tracks.length === 0) return;
-  const prev = Math.max(qs.currentIndex - 1, 0);
+  const ps = get(playerState);
+  const isFirst = qs.currentIndex <= 0;
+
+  let prev: number;
+  if (ps.repeatMode === 'all' && isFirst) {
+    prev = qs.tracks.length - 1; // wrap to last
+  } else if (isFirst) {
+    return; // stay at start (repeat off or repeat one)
+  } else {
+    prev = qs.currentIndex - 1;
+  }
   await playQueueIndex(prev);
 }
 

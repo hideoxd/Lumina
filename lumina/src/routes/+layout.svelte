@@ -27,6 +27,7 @@
 {:else}
   <!-- Splash screen while app initializes -->
   <div class="splash-screen">
+    <div class="splash-ambient-glow"></div>
     <div class="splash-logo">
       <div class="splash-icon">
         <svg width="80" height="80" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -57,6 +58,11 @@
       </div>
       <span class="splash-text">Lumina</span>
       <span class="splash-tagline">Your music, illuminated.</span>
+      <div class="splash-loader">
+        <span class="splash-dot"></span>
+        <span class="splash-dot"></span>
+        <span class="splash-dot"></span>
+      </div>
     </div>
   </div>
 {/if}
@@ -81,6 +87,19 @@
     align-items: center;
     justify-content: center;
     background: var(--bg-primary);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .splash-ambient-glow {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    opacity: 0;
+    animation: glowPulse 3s ease-in-out infinite;
+    pointer-events: none;
   }
 
   .splash-logo {
@@ -88,7 +107,9 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: splashEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    position: relative;
+    z-index: 1;
   }
 
   .splash-icon {
@@ -113,5 +134,65 @@
     color: var(--text-tertiary);
     text-transform: uppercase;
     margin-top: -4px;
+  }
+
+  .splash-loader {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .splash-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    opacity: 0.3;
+    animation: dotPulse 1.4s ease-in-out infinite both;
+  }
+
+  .splash-dot:nth-child(1) {
+    animation-delay: 0s;
+  }
+
+  .splash-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .splash-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes splashEntrance {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes dotPulse {
+    0%, 80%, 100% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% {
+      opacity: 0.15;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.3;
+      transform: scale(1.3);
+    }
   }
 </style>

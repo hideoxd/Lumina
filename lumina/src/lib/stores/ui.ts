@@ -1,6 +1,6 @@
 /* ============================================================
    Lumina — UI Store
-   Manages sidebar state, current view, panels, mini player
+   Manages sidebar state, current view, panels
    ============================================================ */
 import { writable, derived } from 'svelte/store';
 import type { ViewMode, NavItem } from '$lib/types';
@@ -19,12 +19,6 @@ export const nowPlayingFullscreen = writable(false);
 
 /** Settings modal open */
 export const settingsOpen = writable(false);
-
-/** Mini player mode */
-export const miniPlayerMode = writable(false);
-
-/** Last window size before mini player */
-export const lastWindowSize = writable({ width: 1280, height: 800 });
 
 /** Ambient background orbs enabled */
 export const ambientEnabled = writable(true);

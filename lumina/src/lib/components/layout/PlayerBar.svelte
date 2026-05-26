@@ -6,14 +6,22 @@
     isPlaying,
     volume,
     setVolume,
-    toggleShuffle,
     toggleRepeat
   } from '$lib/stores/player';
-  import { playNext, playPrevious, togglePlayPause, seekToSeconds } from '$lib/stores/queue';
-  import { queuePanelOpen, toggleQueue, nowPlayingFullscreen, miniPlayerMode } from '$lib/stores/ui';
+  import { playNext, playPrevious, togglePlayPause, toggleShuffle, seekToSeconds } from '$lib/stores/queue';
+  import { queuePanelOpen, toggleQueue, nowPlayingFullscreen } from '$lib/stores/ui';
+  import { getArtworkUrl } from '$lib/utils/artwork';
   
   let progressStr = $derived(formatTime($playerState.position));
   let durationStr = $derived(formatTime($playerState.duration));
+  
+  let artworkUrl = $state<string | null>(null);
+
+  $effect(() => {
+    const path = $currentTrack?.artwork_path;
+    if (!path) { artworkUrl = null; return; }
+    getArtworkUrl(path).then(url => { artworkUrl = url; }).catch(() => { artworkUrl = null; });
+  });
   
   function formatTime(s: number) {
     if (!s || isNaN(s)) return '0:00';
@@ -38,15 +46,15 @@
 <div class="player-pill">
   <div class="player-left">
     {#if $currentTrack}
-      <div class="cover-art">
-        {#if $currentTrack.artwork_path}
-          <img src={$currentTrack.artwork_path} alt="" />
+      <button class="cover-art" class:spinning={$isPlaying} onclick={() => nowPlayingFullscreen.set(true)} title="Open Now Playing">
+        {#if artworkUrl}
+          <img src={artworkUrl} alt="" />
         {:else}
           <div class="cover-placeholder">
             <Icon name="music" size={16} />
           </div>
         {/if}
-      </div>
+      </button>
       <div class="track-info">
         <div class="track-title truncate">{$currentTrack.title}</div>
         <div class="track-artist truncate">{$currentTrack.artist}</div>
@@ -97,9 +105,6 @@
   </div>
 
   <div class="player-right">
-    <button class="btn-icon" onclick={() => miniPlayerMode.set(true)} title="Mini Player">
-      <Icon name="minimize" size={14} />
-    </button>
     <button class="btn-icon" onclick={() => nowPlayingFullscreen.set(true)} title="Full Screen">
       <Icon name="maximize" size={14} />
     </button>
@@ -174,12 +179,26 @@
     background: var(--bg-primary);
     flex-shrink: 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .cover-art:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.08);
+    transform: scale(1.03);
   }
 
   .cover-art img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+  }
+
+  .cover-art.spinning img {
+    animation: spin 4s linear infinite;
   }
 
   .cover-placeholder {
@@ -189,6 +208,11 @@
     align-items: center;
     justify-content: center;
     color: var(--text-secondary);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   .track-info {
@@ -220,7 +244,11 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    transition: color 0.1s;
+    transition: color 0.15s, background 0.15s, transform 0.15s;
+  }
+
+  .btn-icon:active {
+    transform: scale(0.9);
   }
 
   .btn-icon:hover, .btn-icon.active {
@@ -242,7 +270,11 @@
   }
 
   .btn-play:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
+  }
+
+  .btn-play:active {
+    transform: scale(0.95);
   }
 
   .player-controls {
@@ -291,6 +323,7 @@
     position: absolute;
     left: 0;
     top: 0;
+    transition: width 0.2s linear;
   }
 
   .progress-bar-wrapper:hover .progress-fill {

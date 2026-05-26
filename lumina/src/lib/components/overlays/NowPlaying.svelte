@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fly } from 'svelte/transition';
+  import { quintOut, cubicOut } from 'svelte/easing';
   import Icon from '$lib/components/Icon.svelte';
 
   import { nowPlayingFullscreen } from '$lib/stores/ui';
@@ -60,7 +62,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if $nowPlayingFullscreen}
-  <div class="fs-overlay">
+  <div class="fs-overlay" in:fly={{ y: 60, opacity: 0, duration: 500, easing: quintOut }} out:fly={{ y: 40, duration: 250, easing: cubicOut }}>
     <!-- Background: blurred artwork -->
     {#if artworkUrl}
       <div class="fs-bg-art">
@@ -178,6 +180,11 @@
             <Icon name="skip-forward" size={22} />
           </button>
         </div>
+
+        <div class="fs-hints">
+          <span><kbd>Space</kbd> Play/Pause</span>
+          <span><kbd>Esc</kbd> Close</span>
+        </div>
       </div>
     </div>
   </div>
@@ -191,6 +198,40 @@
     background: #000;
     display: flex;
     flex-direction: column;
+  }
+
+  /* Staggered entrance for children */
+  .fs-overlay :global(.fs-topbar) {
+    animation: fsStaggerUp 0.5s 0.08s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fs-overlay :global(.fs-bg-art),
+  .fs-overlay :global(.fs-bg-dim) {
+    animation: fsStaggerFade 0.6s 0.05s both ease-out;
+  }
+
+  .fs-overlay :global(.fs-disc-container) {
+    animation: fsStaggerUp 0.55s 0.18s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fs-overlay :global(.fs-info) {
+    animation: fsStaggerUp 0.5s 0.3s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fsStaggerUp {
+    from {
+      opacity: 0;
+      transform: translateY(32px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes fsStaggerFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .fs-bg-art {
@@ -558,5 +599,43 @@
 
   .fs-play-btn:active {
     transform: scale(0.96);
+  }
+
+  /* Keyboard hints */
+  .fs-hints {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 24px;
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
+  }
+
+  .fs-hints:hover {
+    opacity: 0.6;
+  }
+
+  .fs-hints span {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fs-hints kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
   }
 </style>

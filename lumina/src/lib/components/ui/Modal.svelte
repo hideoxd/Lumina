@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { fade, fly } from 'svelte/transition';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Icon from '$lib/components/Icon.svelte';
@@ -67,6 +68,7 @@
     role="button"
     tabindex="0"
     aria-label="Close dialog"
+    transition:fade={{ duration: 200 }}
     onclick={handleBackdropClick}
     onkeydown={handleBackdropKeydown}
   >
@@ -76,6 +78,7 @@
       aria-label={title || 'Dialog'}
       tabindex="-1"
       style="max-width: {widthMap[size]}"
+      transition:fly={{ duration: 200, y: 16, opacity: 0 }}
       onkeydown={(e) => e.stopPropagation()}
       onclick={(e) => e.stopPropagation()}
     >
@@ -115,13 +118,11 @@
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    animation: fadeIn var(--duration-normal) var(--ease-out-quart) both;
   }
 
   .dialog {
     width: 100%;
     max-height: min(84vh, 920px);
-    animation: fadeInScale var(--duration-slow) var(--ease-out-expo) both;
   }
 
   .modal-surface {

@@ -148,6 +148,7 @@ export interface QueueState {
   tracks: Track[];
   currentIndex: number;
   history: Track[];
+  originalOrder: Track[] | null; // preserved when shuffle is toggled on, restored when off
 }
 
 /** Scan progress event */
