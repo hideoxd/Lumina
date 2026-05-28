@@ -330,11 +330,11 @@ interface LrclibResponse {
 }
 
 async function fetchFromLrclib(artist: string, title: string, duration: number): Promise<LyricsData | null> {
-  // Try `get` endpoint first (exact match by artist + title)
+  // Omit custom headers to avoid CORS preflight (OPTIONS) in browser mode.
+  // Simple GET requests with no custom headers don't trigger preflight.
   const url = `${LRCLIB_BASE}/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
   const res = await fetch(url, {
-    headers: { 'Lrclib-Client': 'Lumina/1.0' },
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (res.ok) {
@@ -346,19 +346,19 @@ async function fetchFromLrclib(artist: string, title: string, duration: number):
   if (res.status === 404) {
     const searchUrl = `${LRCLIB_BASE}/search?q=${encodeURIComponent(`${artist} ${title}`)}`;
     const searchRes = await fetch(searchUrl, {
-      headers: { 'Lrclib-Client': 'Lumina/1.0' },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (searchRes.ok) {
       const results: LrclibResponse[] = await searchRes.json();
-      // Find best match: same artist + title, close duration
+      // Find best match: same artist + title, close duration (if known)
+      const hasValidDuration = duration > 0;
       const best = results.find(
         (r) =>
           r.artistName.toLowerCase() === artist.toLowerCase() &&
           r.trackName.toLowerCase() === title.toLowerCase() &&
-          Math.abs(r.duration - duration) < 3
-      ) ?? results[0];
+          (!hasValidDuration || Math.abs(r.duration - duration) < 3)
+      ) ?? (results.length > 0 ? results[0] : null);
       if (best) return convertLrclibResponse(best);
     }
   }
@@ -413,7 +413,14 @@ export async function fetchLyrics(track: Track): Promise<void> {
       lyricsStore.set(notFound);
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Failed to fetch lyrics';
+    let msg: string;
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      msg = 'Lyrics request timed out. Please try again.';
+    } else if (e instanceof TypeError && e.message === 'Failed to fetch') {
+      msg = 'Network error - check your connection.';
+    } else {
+      msg = e instanceof Error ? e.message : 'Failed to fetch lyrics';
+    }
     lyricsError.set(msg);
     lyricsStore.set(null);
   } finally {

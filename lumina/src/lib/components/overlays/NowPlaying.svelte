@@ -247,14 +247,6 @@
           </button>
         </div>
 
-        <div class="fs-hints">
-          <span><kbd>Space</kbd> Play/Pause</span>
-          <span><kbd>k</kbd> Play/Pause</span>
-          <span><kbd>←</kbd><kbd>→</kbd> Seek</span>
-          <span><kbd>n</kbd> Next</span>
-          <span><kbd>p</kbd> Prev</span>
-          <span><kbd>Esc</kbd> Close</span>
-        </div>
       </div>
     {/if}
     </div>
@@ -730,44 +722,6 @@
 
   .fs-play-btn:active {
     transform: scale(0.96);
-  }
-
-  /* Keyboard hints */
-  .fs-hints {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 24px;
-    opacity: 0.35;
-    transition: opacity 0.2s ease;
-  }
-
-  .fs-hints:hover {
-    opacity: 0.6;
-  }
-
-  .fs-hints span {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .fs-hints kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    font-family: inherit;
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
   }
 
   /* ═══════════════════════════════════════

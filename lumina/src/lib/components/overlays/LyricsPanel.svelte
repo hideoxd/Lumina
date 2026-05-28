@@ -23,7 +23,7 @@
   {:else if $lyricsError}
     <div class="lyrics-state">
       <span class="lyrics-state-icon">!</span>
-      <span class="lyrics-state-text">Could not load lyrics</span>
+      <span class="lyrics-state-text">{$lyricsError}</span>
       <button class="lyrics-retry-btn" onclick={() => $currentTrack && fetchLyrics($currentTrack)}>
         Retry
       </button>
