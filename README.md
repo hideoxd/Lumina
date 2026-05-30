@@ -1,16 +1,22 @@
 # Lumina
 
-**A premium local music player** built with Tauri 2, Svelte 5, and Rust. Features a dark glass UI, local library management, YouTube search + download, and a compact mini player mode.
+**A premium local music player** built with Tauri 2, Svelte 5, and Rust. Features a dark glass UI, local library management, YouTube search + streaming, synced lyrics via LRCLIB, a fullscreen Now Playing view with vinyl animation, and a compact mini player mode.
+
+![Lumina](lumina/src/static/logo.png)
 
 ## Features
 
 - **Local Music Library** — Import audio files (MP3, FLAC, M4A, OGG, WAV, etc.) from your computer
 - **Library Management** — Browse by tracks, albums, artists, and playlists; search, favorite, and edit metadata
 - **Playback** — Play/pause, skip, seek, shuffle, repeat modes, volume control, and queue management
-- **YouTube Integration** — Search YouTube via the Data API v3 and download audio directly into your library (requires `yt-dlp` and `ffmpeg`)
+- **Now Playing View** — Fullscreen mode with vinyl disc animation, marquee scrolling for long titles, and album artwork backdrop blur
+- **Synced Lyrics** — Auto-fetches time-synced lyrics via [LRCLIB](https://lrclib.net) with highlight-at-position tracking, plain text fallback, and localStorage cache. Works even for tracks with Devanagari/Hindi script (built-in transliteration)
+- **YouTube Integration** — Search YouTube via the Data API v3 and stream audio directly into your library (no download required)
 - **Mini Player** — Compact always-on-top window mode that shrinks to the corner of your screen
 - **Custom Titlebar** — Frameless window with custom minimize/maximize/close controls
 - **Theme Engine** — 6 built-in presets (Aurora Blue, Crystal Sky, Deep Ocean, etc.) with adjustable accent color, glass blur, opacity, border radius, animation speed, and dark/light mode
+- **Queue Management** — View and reorder the upcoming track queue, play next, shuffle, repeat all/one
+- **Audio Visualizer** — Waveform bars that pulse to the music
 - **Dual-mode** — Runs as a native Tauri desktop app **or** directly in a web browser (with reduced capabilities)
 
 ## Screenshots
@@ -52,12 +58,34 @@ pnpm tauri dev
 
 The browser dev server runs at `http://localhost:1420`.
 
-### Build for Production
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` / `k` | Play / Pause |
+| `←` `→` | Seek backward / forward 5s |
+| `n` | Next track |
+| `p` | Previous track |
+| `Escape` | Close fullscreen / modal |
+
+## Build for Production
 
 ```bash
-# Build the Tauri desktop app
+# Build the frontend
+pnpm build
+
+# Build the Tauri desktop app (creates .exe + installer)
 pnpm tauri build
 ```
+
+### Build Output
+
+After a successful release build, the following artifacts are produced:
+
+| Artifact | Path |
+|----------|------|
+| Standalone executable | `src-tauri/target/release/lumina.exe` |
+| NSIS installer | `src-tauri/target/release/bundle/nsis/Lumina_0.1.0_x64-setup.exe` |
 
 ## YouTube Setup (Optional)
 
@@ -84,10 +112,10 @@ lumina/
 │   │   ├── components/
 │   │   │   ├── layout/           # Titlebar, Sidebar, PlayerBar
 │   │   │   ├── library/          # TrackList, AlbumGrid, ArtistGrid, PlaylistGrid
-│   │   │   ├── overlays/         # SettingsModal, NowPlaying, QueuePanel, EditMetadataModal
+│   │   │   ├── overlays/         # NowPlaying, LyricsPanel, QueuePanel, SettingsModal, EditMetadataModal
 │   │   │   ├── ui/               # Button, Card, Modal, Slider, Toggle, ContextMenu
 │   │   │   └── visualizer/       # WaveBars
-│   │   ├── stores/               # Svelte stores (player, queue, library, ui, theme, api)
+│   │   ├── stores/               # Svelte stores (player, queue, library, lyrics, ui, theme, api)
 │   │   ├── commands/             # Tauri command wrappers
 │   │   ├── controllers/          # Browser-mode controllers
 │   │   ├── db/                   # SQLite database layer (sql.js)
@@ -123,7 +151,7 @@ lumina/
 | `pnpm preview` | Preview production build |
 | `pnpm check` | Run Svelte type checking |
 | `pnpm tauri dev` | Run Tauri desktop app (dev) |
-| `pnpm tauri build` | Build Tauri desktop app |
+| `pnpm tauri build` | Build Tauri desktop app + installer |
 
 ## License
 
